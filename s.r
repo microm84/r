@@ -3603,5 +3603,202 @@ data(reported_heights)
 library(stringr)
 str_subset(reported_heights$height, 'cm')
 
+#
+yes <- c("180 cm", "70 inches")
+no <- c("180", "70''")
+s <- c(yes, no)
+str_detect(s, "cm") | str_detect(s, "inches")
 
+str_detect(s, "cm|inches")
 
+#
+yes <- c("5", "6", "5'10", "5 feet", "4'11")
+no <- c("", ".", "Five", "six")
+s <- c(yes, no)
+pattern <- "\\d"
+str_detect(s, pattern)
+
+#test
+yes <- c("5", "6", "5'10", "5 feet", "4'11")
+no <- c("", ".", "Five", "six")
+s <- c(yes, no)
+pattern <- "\d"
+str_detect(s, pattern)
+
+#
+str_view(s, pattern)
+str_view_all(s, pattern)
+
+#
+str_view(s, "[56]")
+
+#
+yes <- as.character(4:7)
+no <- as.character(1:3)
+s <- c(yes, no)
+str_detect(s, "[4-7]")
+
+#
+pattern <- "^\\d$"
+yes <- c("1", "5", "9")
+no <- c("12", "123", " 1", "a4", "b")
+s <- c(yes, no)
+str_view_all(s, pattern)
+
+#
+pattern <- "^\\d{1,2}$"
+yes <- c("1", "5", "9", "12")
+no <- c("123", "a4", "b")
+str_view(c(yes, no), pattern)
+
+#
+pattern <- "^[4-7]'\\d{1,2}\"$"
+yes <- c("5'7\"", "6'2\"",  "5'12\"")
+no <- c("6,2\"", "6.2\"","I am 5'11\"", "3'2\"", "64")
+str_detect(yes, pattern)
+str_detect(no, pattern)
+
+# define the problems
+library(dslabs)
+data(reported_heights)
+x <- as.numeric(reported_heights$height)
+
+not_inches <- function(x, smallest = 50, tallest = 84){
+  inches <- suppressWarnings(as.numeric(x))
+  ind <- is.na(inches) | inches < smallest | inches > tallest
+  ind
+}
+
+library(dplyr)
+problems <- reported_heights %>% 
+  filter(not_inches(height)) %>%
+  pull(height)
+
+#
+library(stringr)
+pattern = "^[4-7]'\\d{1,2}\"$"
+sum(str_detect(problems, pattern))
+#
+problems[c(2, 10, 11, 12, 15)] %>% str_view(pattern)
+#
+str_subset(problems, "inches")
+#
+str_subset(problems, "''")
+
+#
+library(dslabs)
+data(reported_heights)
+x <- as.numeric(reported_heights$height)
+
+not_inches <- function(x, smallest = 50, tallest = 84){
+  inches <- suppressWarnings(as.numeric(x))
+  ind <- is.na(inches) | inches < smallest | inches > tallest
+  ind
+}
+
+library(dplyr)
+problems <- reported_heights %>% 
+  filter(not_inches(height)) %>%
+  pull(height)
+
+pattern = "^[4-7]'\\d{1,2}$"
+
+problems %>% 
+  str_replace("feet|ft|foot", "'") %>% # replace feet, ft, foot with ' 
+  str_replace("inches|in|''|\"", "") %>% # remove all inches symbols
+  str_detect(pattern) %>% 
+  sum()
+
+#
+library(dslabs)
+data(reported_heights)
+x <- as.numeric(reported_heights$height)
+
+not_inches <- function(x, smallest = 50, tallest = 84){
+  inches <- suppressWarnings(as.numeric(x))
+  ind <- is.na(inches) | inches < smallest | inches > tallest
+  ind
+}
+
+library(dplyr)
+problems <- reported_heights %>% 
+  filter(not_inches(height)) %>%
+  pull(height)
+
+pattern = "^[4-7]\\s*'\\s*\\d{1,2}$"
+
+problems %>% 
+  str_replace("feet|ft|foot", "'") %>% # replace feet, ft, foot with ' 
+  str_replace("inches|in|''|\"", "") %>% # remove all inches symbols
+  str_detect(pattern) %>% 
+  sum()
+
+#
+library(dslabs)
+data(reported_heights)
+x <- as.numeric(reported_heights$height)
+
+not_inches <- function(x, smallest = 50, tallest = 84){
+  inches <- suppressWarnings(as.numeric(x))
+  ind <- is.na(inches) | inches < smallest | inches > tallest
+  ind
+}
+
+library(dplyr)
+problems <- reported_heights %>% 
+  filter(not_inches(height)) %>%
+  pull(height)
+
+pattern = "^[4-7]'\\s\\d{1,2}\"$"
+library(stringr)
+str_subset(problems, pattern)
+
+#
+yes <- c("AB", "A1B", "A11B", "A111B", "A1111B")
+no <- c("A2B", "A21B")
+str_detect(yes, "A1*B")
+str_detect(no, "A1*B")
+
+#group
+pattern_without_groups <- "^[4-7],\\d*$"
+pattern_with_groups <-  "^([4-7]),(\\d*)$"
+yes <- c("5,9", "5,11", "6,", "6,1")
+no <- c("5'9", ",", "2,8", "6.1.1")
+s <- c(yes, no)
+str_detect(s, pattern_without_groups)
+str_detect(s, pattern_with_groups)
+#match with group
+str_match(s, pattern_with_groups)
+#match vs extract
+str_extract(s, pattern_with_groups)
+
+#
+pattern_with_groups <-  "^([4-7]),(\\d*)$"
+yes <- c("5,9", "5,11", "6,", "6,1")
+no <- c("5'9", ",", "2,8", "6.1.1")
+s <- c(yes, no)
+str_replace(s, pattern_with_groups, "\\1'\\2")
+
+#
+library(dslabs)
+data(reported_heights)
+x <- as.numeric(reported_heights$height)
+
+not_inches <- function(x, smallest = 50, tallest = 84){
+  inches <- suppressWarnings(as.numeric(x))
+  ind <- is.na(inches) | inches < smallest | inches > tallest
+  ind
+}
+
+library(dplyr)
+problems <- reported_heights %>% 
+  filter(not_inches(height)) %>%
+  pull(height)
+
+pattern_with_groups <-"^([4-7])\\s*[,\\.\\s+]\\s*(\\d*)$"
+
+library(stringr)
+str_subset(problems, pattern_with_groups) %>% head()
+
+str_subset(problems, pattern_with_groups) %>% 
+  str_replace(pattern_with_groups, "\\1'\\2") %>% head
