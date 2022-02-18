@@ -3802,3 +3802,145 @@ str_subset(problems, pattern_with_groups) %>% head()
 
 str_subset(problems, pattern_with_groups) %>% 
   str_replace(pattern_with_groups, "\\1'\\2") %>% head
+
+#improving
+library(dslabs)
+data(reported_heights)
+x <- as.numeric(reported_heights$height)
+
+not_inches_or_cm <- function(x, smallest = 50, tallest = 84){
+  inches <- suppressWarnings(as.numeric(x))
+  ind <- !is.na(inches) & 
+    ((inches >= smallest & inches <= tallest) |
+       (inches/2.54 >= smallest & inches/2.54 <= tallest))
+  !ind
+}
+
+problems <- reported_heights %>% 
+  filter(not_inches_or_cm(height)) %>%
+  pull(height)
+
+#
+converted <- problems %>% 
+  str_replace("feet|foot|ft", "'") %>% # convert feet symbols to '
+  str_replace("inches|in|''|\"", "") %>%  # remove inches symbols
+  str_replace("^([4-7])\\s*[,\\.\\s+]\\s*(\\d*)$", "\\1'\\2")# change format
+
+pattern <- "^[4-7]\\s*'\\s*\\d{1,2}$"
+index <- str_detect(converted, pattern)
+mean(index)
+
+converted[!index]
+
+#test 1
+library(dslabs)
+data(reported_heights)
+x <- as.numeric(reported_heights$height)
+
+not_inches <- function(x, smallest = 50, tallest = 84){
+  inches <- suppressWarnings(as.numeric(x))
+  ind <- is.na(inches) | inches < smallest | inches > tallest
+  ind
+}
+
+library(dplyr)
+problems <- reported_heights %>% 
+  filter(not_inches(height)) %>%
+  pull(height)
+
+#test 2
+no <- function(x, smallest = 50, tallest = 84){
+  inches <- suppressWarnings(as.numeric(x))
+  ind <- is.na(inches) | inches < smallest | inches > tallest
+  ind
+}
+no(c(175))
+no(c("5'8\""))
+no(c(70))
+no(c(85))
+
+#test 3
+s = c("70", "5 ft", "4'11", "", ".", "Six feet")
+pattern = "\\d|ft"
+library(stringr)
+str_view_all(s, pattern)
+
+#test 3.3
+s = c("70", "5 ft", "4'11", "", ".", "Six feet")
+pattern = "\\d\\d|ft"
+library(stringr)
+str_view_all(s, pattern)
+
+#test 8.1
+animals <- c("moose", "monkey", "meerkat", "mountain lion")
+pattern <- 'mo*'
+str_detect(animals, pattern)
+#test 8.2
+animals <- c("moose", "monkey", "meerkat", "mountain lion")
+pattern <- 'mo?'
+str_detect(animals, pattern)
+
+#q 9
+schools = c("U. Kentucky","Univ New Hampshire","Univ. of Massachusetts","University Georgia",
+"U California","California State University")
+library(dplyr)
+library(stringr)
+#9 D
+schools %>% 
+    str_replace("^Univ\\.?\\s|^U\\.?\\s", "University") %>% 
+    str_replace("University ", "University of ")
+#9 B
+schools = c("U. Kentucky","Univ New Hampshire","Univ. of Massachusetts","University Georgia",
+"U California","California State University")
+library(dplyr)
+library(stringr)
+schools %>% 
+    str_replace("^Univ\\.?\\s|^U\\.?\\s", "University ") %>% 
+    str_replace("^University of |^University ", "University of ")
+
+# q13 A
+yes <- c("5 feet 7inches", "5 7")
+no <- c("5ft 9 inches", "5 ft 9 inches")
+s <- c(yes, no)
+
+converted <- s %>% 
+    str_replace("\\s*(feet|foot|ft)\\s*", "'") %>% 
+    str_replace("\\s*(inches|in|''|\")\\s*", "") %>% 
+    str_replace("^([4-7])\\s*[,\\.\\s+]\\s*(\\d*)$", "\\1'\\2")
+
+pattern <- "^[4-7]\\s*'\\s*\\d{1,2}$"
+str_detect(converted, pattern)
+
+#q13 B
+yes <- c("5 feet 7inches", "5 7")
+no <- c("5ft 9 inches", "5 ft 9 inches")
+s <- c(yes, no)
+converted <- s %>% 
+    str_replace("\\s+feet|foot|ft\\s+", "'") %>% 
+    str_replace("\\s+inches|in|''|\"\\s+", "") %>% 
+    str_replace("^([4-7])\\s*[,\\.\\s+]\\s*(\\d*)$", "\\1'\\2")
+pattern <- "^[4-7]\\s*'\\s*\\d{1,2}$"
+str_detect(converted, pattern)
+
+#q13C
+yes <- c("5 feet 7inches", "5 7")
+no <- c("5ft 9 inches", "5 ft 9 inches")
+s <- c(yes, no)
+converted <- s %>% 
+    str_replace("\\s*|feet|foot|ft", "'") %>% 
+    str_replace("\\s*|inches|in|''|\"", "") %>% 
+    str_replace("^([4-7])\\s*[,\\.\\s+]\\s*(\\d*)$", "\\1'\\2")
+pattern <- "^[4-7]\\s*'\\s*\\d{1,2}$"
+str_detect(converted, pattern)
+
+#q13D
+yes <- c("5 feet 7inches", "5 7")
+no <- c("5ft 9 inches", "5 ft 9 inches")
+s <- c(yes, no)
+converted <- s %>% 
+    str_replace_all(“\\s”, “”) %>% 
+    str_replace("\\s|feet|foot|ft", "'") %>% 
+    str_replace("\\s|inches|in|''|\"", "") %>% 
+    str_replace("^([4-7])\\s*[,\\.\\s+]\\s*(\\d*)$", "\\1'\\2") 
+pattern <- "^[4-7]\\s*'\\s*\\d{1,2}$"
+str_detect(converted, pattern)
