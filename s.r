@@ -4151,3 +4151,166 @@ x %>%
 as_tibble() %>%
 mutate_all(parse_guess)
 
+#recoding
+library(dslabs)
+data("gapminder")
+library(ggplot2)
+gapminder %>% 
+  filter(region == "Caribbean") %>%
+  ggplot(aes(year, life_expectancy, color = country)) +
+  geom_line()
+# new
+gapminder %>% filter(region=="Caribbean") %>%
+  mutate(country = recode(country, 
+                          `Antigua and Barbuda` = "Barbuda",
+                          `Dominican Republic` = "DR",
+                          `St. Vincent and the Grenadines` = "St. Vincent",
+                          `Trinidad and Tobago` = "Trinidad")) %>%
+  ggplot(aes(year, life_expectancy, color = country)) +
+  geom_line()
+
+# review pdf tools, but actually we don't need pdftools
+library(dslabs)
+data("raw_data_research_funding_rates")
+tab <- str_split(raw_data_research_funding_rates, "\n")
+tab <- tab[[1]]
+the_names_1 <- tab[3]
+the_names_2 <- tab[4]
+the_names_1 <- the_names_1 %>%
+  str_trim() %>%
+  str_replace_all(",\\s.", "") %>%
+  str_split("\\s{2,}", simplify = TRUE)
+the_names_2 <- the_names_2 %>%
+  str_trim() %>%
+  str_split("\\s+", simplify = TRUE)
+tmp_names <- str_c(rep(the_names_1, each = 3), the_names_2[-1], sep = "_")
+the_names <- c(the_names_2[1], tmp_names) %>%
+  str_to_lower() %>%
+  str_replace_all("\\s", "_")
+new_research_funding_rates <- tab[6:14] %>%
+  str_trim %>%
+  str_split("\\s{2,}", simplify = TRUE) %>%
+  data.frame() %>%
+  setNames(the_names) %>%
+  mutate_at(-1, parse_number)
+new_research_funding_rates %>% as_tibble()
+
+#q1
+a = 'Mandy, Chr and Lau'
+library(stringr)
+str_split(a, ",|and")
+str_split(a, ", | and ")
+str_split(a, ",\\s|\\sand\\s")
+str_split(a, "\\s?(,|and)\\s?")
+
+#q2 A
+schedule = data.frame(day = c('Monday', 'Tuesday'), 
+staff = c('Mandy, Chris and Laura', 'Steve, Ruth and Frank'))
+library(tidyr)
+t <- schedule %>% 
+  mutate(staff = str_split(staff, ", | and ")) %>% 
+  unnest()
+t
+#q2 A test
+schedule = data.frame(day = c('Monday', 'Tuesday'), 
+staff = c('Mandy, Chris and Laura', 'Steve, Ruth and Frank'))
+library(tidyr)
+t <- schedule %>% 
+  mutate(staff = str_split(staff, ", | and ")) 
+
+#q2 B is wrong
+schedule = data.frame(day = c('Monday', 'Tuesday'), 
+staff = c('Mandy, Chris and Laura', 'Steve, Ruth and Frank'))
+library(tidyr)
+t <- separate(schedule, staff, into = c("s1","s2","s3"), sep = “,”) %>% 
+  gather(key = s, value = staff, s1:s3)
+t
+
+#q2 C
+schedule = data.frame(day = c('Monday', 'Tuesday'), 
+staff = c('Mandy, Chris and Laura', 'Steve, Ruth and Frank'))
+library(tidyr)
+t <- schedule %>% 
+  mutate(staff = str_split(staff, ", | and ", simplify = TRUE)) %>% 
+  unnest()
+t
+#q2 C test
+schedule = data.frame(day = c('Monday', 'Tuesday'), 
+staff = c('Mandy, Chris and Laura', 'Steve, Ruth and Frank'))
+library(tidyr)
+t <- schedule %>% 
+  mutate(staff = str_split(staff, ", | and ", simplify = TRUE))
+
+#q3
+library(ggplot2)
+dat <- gapminder %>% filter(region == "Middle Africa") %>% 
+  mutate(country_short = recode(country, 
+                                "Central African Republic" = "CAR", 
+                                "Congo, Dem. Rep." = "DRC",
+                                "Equatorial Guinea" = "Eq. Guinea")) %>%
+ggplot(aes(year, life_expectancy, color = country_short)) +
+  geom_line()
+
+#q4-7
+#q4
+library(rvest)
+#library(tidyverse)
+library(dplyr)
+library(stringr)
+url <- "https://en.wikipedia.org/w/index.php?title=Opinion_polling_for_the_United_Kingdom_European_Union_membership_referendum&oldid=896735054"
+tab <- read_html(url) %>% html_nodes("table")
+polls <- tab[[6]] %>% html_table(fill = TRUE)
+
+library(dplyr)
+newName = c("dates", "remain", "leave", "undecided", "lead", "samplesize", "pollster", "poll_type", "notes")
+p = polls[-1,] %>%
+setNames(newName)
+library(stringr)
+p2 = p %>%
+filter(str_detect(remain, "%"))
+
+#q5
+polls = p2
+#q5.1
+as.numeric(str_remove(polls$remain, "%"))
+#q5.2
+as.numeric(polls$remain)/100
+#q5.3
+library(readr)
+parse_number(polls$remain)
+#q5.4
+
+#q5.5
+as.numeric(str_replace(polls$remain, "%", ""))/100
+#q5.6
+parse_number(polls$remain)/100
+
+#q6
+pt = polls
+library(stringr)
+str_replace_all(pt$undecided, "N/A", "0")
+
+#q7.1
+
+#q7.2 T
+temp <- str_extract_all(polls$dates, "\\d+\\s[a-zA-Z]+")
+ed <- sapply(temp, function(x) x[length(x)])
+ed
+#q7.3
+#q7.4 T
+temp <- str_extract_all(polls$dates, "[0-9]+\\s[a-zA-Z]+")
+ed <- sapply(temp, function(x) x[length(x)])
+ed
+#q7.5 T
+temp <- str_extract_all(polls$dates, "\\d{1,2}\\s[a-zA-Z]+")
+ed <- sapply(temp, function(x) x[length(x)])
+ed
+#q7.6 F
+temp <- str_extract_all(polls$dates, "\\d{1,2}[a-zA-Z]+")
+ed <- sapply(temp, function(x) x[length(x)])
+ed
+#q7.7 T
+temp <- str_extract_all(polls$dates, "\\d+\\s[a-zA-Z]{3,5}")
+ed <- sapply(temp, function(x) x[length(x)])
+ed
+
