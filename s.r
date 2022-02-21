@@ -4314,3 +4314,408 @@ temp <- str_extract_all(polls$dates, "\\d+\\s[a-zA-Z]{3,5}")
 ed <- sapply(temp, function(x) x[length(x)])
 ed
 
+#date and time
+library(dslabs)
+data("polls_us_election_2016")
+class(polls_us_election_2016$startdate)
+as.numeric(polls_us_election_2016$startdate) %>% head
+
+polls_us_election_2016 %>% filter(pollster == "Ipsos" & state =="U.S.") %>%
+  ggplot(aes(startdate, rawpoll_trump)) +
+  geom_line()
+
+#lubridate
+library(lubridate)
+set.seed(2002)
+dates <- sample(polls_us_election_2016$startdate, 10) %>% sort
+dates
+tibble(date = dates, 
+       month = month(dates),
+       day = day(dates),
+       year = year(dates))
+month(dates, label = TRUE)
+x <- c(20090101, "2009-01-02", "2009 01 03", "2009-1-4",
+       "2009-1, 5", "Created on 2009 1 6", "200901 !!! 07")
+ymd(x)
+
+now() %>% hour()
+now() %>% minute()
+now() %>% second()
+#
+library(dslabs)
+library(dplyr)
+library(ggplot2)
+polls_us_election_2016 %>% 
+  mutate(week = round_date(startdate, "week")) %>%
+  group_by(week) %>%
+  summarize(margin = mean(rawpoll_clinton - rawpoll_trump)) %>%
+  qplot(week, margin, data = .)
+#test
+library(dslabs)
+library(dplyr)
+library(ggplot2)
+polls_us_election_2016 %>%
+select(startdate, rawpoll_clinton, rawpoll_trump) %>%
+mutate(week = round_date(startdate, "week")) %>%
+group_by(week) %>%
+summarize(n=n(),margin = mean(rawpoll_clinton - rawpoll_trump))
+
+#text mining
+library(dslabs)
+data("trump_tweets")
+#
+library(dslabs)
+library(lubridate)
+library(tidyr)
+library(dplyr)
+campaign_tweets <- trump_tweets %>% 
+  extract(source, "source", "Twitter for (.*)") %>%
+  filter(source %in% c("Android", "iPhone") &
+           created_at >= ymd("2015-06-17") & 
+           created_at < ymd("2016-11-08")) %>%
+  filter(!is_retweet) %>%
+  arrange(created_at) %>% 
+  as_tibble()
+
+#test
+ct = campaign_tweets %>%
+select(source, created_at) %>%
+mutate(hour = hour(with_tz(created_at, 'EST')))
+#test count
+t = ct %>% count(source, hour) %>% group_by(source) %>% mutate(percent = n/sum(n)) %>% ungroup()
+#test another way of count
+t1 = ct %>% group_by(source, hour) %>% summarize(n=n()) %>% mutate(percent = n/sum(n)) %>% ungroup()
+
+#test delete color='' argument inside labels
+library(scales)
+#sclaes for using percent_format()
+campaign_tweets %>%
+  mutate(hour = hour(with_tz(created_at, "EST"))) %>%
+  count(source, hour) %>%
+  group_by(source) %>%
+  mutate(percent = n / sum(n)) %>%
+  ungroup %>%
+  ggplot(aes(hour, percent, color = source)) +
+  geom_line() +
+  geom_point() +
+  scale_y_continuous(labels = percent_format()) +
+  labs(x = "Hour of day (EST)", y = "% of tweets")
+
+#test str_wrap
+a='123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 '
+library(stringr)
+library(dplyr)
+a %>% str_wrap(width=40) %>% cat()
+a %>% cat()
+
+#test reorder()
+a = data.frame(word=c('ha','ha2','ha3', 'ha3', 'ha', 'ha', 'ha'))
+b = a %>% count(word) %>% mutate(word=reorder(word,n))
+
+#
+library(dslabs)
+library(lubridate)
+library(tidyr)
+library(dplyr)
+campaign_tweets <- trump_tweets %>% 
+  extract(source, "source", "Twitter for (.*)") %>%
+  filter(source %in% c("Android", "iPhone") &
+           created_at >= ymd("2015-06-17") & 
+           created_at < ymd("2016-11-08")) %>%
+  filter(!is_retweet) %>%
+  arrange(created_at) %>% 
+  as_tibble()
+
+links <- "https://t.co/[A-Za-z\\d]+|&amp;"
+tweet_words <- campaign_tweets %>% 
+  mutate(text = str_replace_all(text, links, ""))  %>%
+  unnest_tokens(word, text, token = "tweets") %>%
+  filter(!word %in% stop_words$word &
+           !str_detect(word, "^\\d+$")) %>%
+  mutate(word = str_replace(word, "^'", ""))
+
+android_iphone_or <- tweet_words %>%
+  count(word, source) %>%
+  pivot_wider(names_from = "source", values_from = "n", values_fill = 0) %>%
+  mutate(or = (Android + 0.5) / (sum(Android) - Android + 0.5) / 
+           ( (iPhone + 0.5) / (sum(iPhone) - iPhone + 0.5)))
+
+#test
+a = tweet_words %>% select(source, created_at, word)
+
+#test 
+library(dplyr)
+a = data.frame(word = c("'a", "b'b'", "c", "'dd"))
+a %>% mutate(word = str_replace(word, "'", ""))
+
+#sentiment
+library(dslabs)
+library(lubridate)
+library(tidyr)
+library(dplyr)
+campaign_tweets <- trump_tweets %>% 
+  extract(source, "source", "Twitter for (.*)") %>%
+  filter(source %in% c("Android", "iPhone") &
+           created_at >= ymd("2015-06-17") & 
+           created_at < ymd("2016-11-08")) %>%
+  filter(!is_retweet) %>%
+  arrange(created_at) %>% 
+  as_tibble()
+
+library(tidytext)
+library(stringr)
+links <- "https://t.co/[A-Za-z\\d]+|&amp;"
+tweet_words <- campaign_tweets %>% 
+  mutate(text = str_replace_all(text, links, ""))  %>%
+  unnest_tokens(word, text, token = "tweets") %>%
+  filter(!word %in% stop_words$word &
+           !str_detect(word, "^\\d+$")) %>%
+  mutate(word = str_replace(word, "^'", ""))
+
+library(textdata)
+nrc <- get_sentiments("nrc")
+
+tweet_words %>% inner_join(nrc, by = "word") %>% 
+  select(source, word, sentiment) %>% 
+  sample_n(5)
+
+#sentiment quant
+library(dslabs)
+library(lubridate)
+library(tidyr)
+library(dplyr)
+campaign_tweets <- trump_tweets %>% 
+  extract(source, "source", "Twitter for (.*)") %>%
+  filter(source %in% c("Android", "iPhone") &
+           created_at >= ymd("2015-06-17") & 
+           created_at < ymd("2016-11-08")) %>%
+  filter(!is_retweet) %>%
+  arrange(created_at) %>% 
+  as_tibble()
+
+library(tidytext)
+library(stringr)
+links <- "https://t.co/[A-Za-z\\d]+|&amp;"
+tweet_words <- campaign_tweets %>% 
+  mutate(text = str_replace_all(text, links, ""))  %>%
+  unnest_tokens(word, text, token = "tweets") %>%
+  filter(!word %in% stop_words$word &
+           !str_detect(word, "^\\d+$")) %>%
+  mutate(word = str_replace(word, "^'", ""))
+
+library(textdata)
+nrc <- get_sentiments("nrc")
+
+sentiment_counts <- tweet_words %>%
+  left_join(nrc, by = "word") %>%
+  count(source, sentiment) %>%
+  pivot_wider(names_from = "source", values_from = "n") %>%
+  mutate(sentiment = replace_na(sentiment, replace = "none"))
+sentiment_counts
+
+#test another round
+library(dslabs)
+library(lubridate)
+library(tidyr)
+library(dplyr)
+library(tidytext)
+library(stringr)
+library(textdata)
+
+campaign_tweets <- trump_tweets %>% 
+  extract(source, "source", "Twitter for (.*)") %>%
+  filter(source %in% c("Android", "iPhone") &
+           created_at >= ymd("2015-06-17") & 
+           created_at < ymd("2016-11-08")) %>%
+  filter(!is_retweet) %>%
+  arrange(created_at) %>% 
+  as_tibble()
+
+links <- "https://t.co/[A-Za-z\\d]+|&amp;"
+tweet_words <- campaign_tweets %>% 
+  mutate(text = str_replace_all(text, links, ""))  %>%
+  unnest_tokens(word, text, token = "tweets") %>%
+  filter(!word %in% stop_words$word &
+           !str_detect(word, "^\\d+$")) %>%
+  mutate(word = str_replace(word, "^'", ""))
+
+sentiment_counts <- tweet_words %>%
+  left_join(nrc, by = "word") %>%
+  count(source, sentiment) %>%
+  pivot_wider(names_from = "source", values_from = "n") %>%
+  mutate(sentiment = replace_na(sentiment, replace = "none"))
+sentiment_counts
+
+#test
+log_or %>%
+  mutate(sentiment = reorder(sentiment, log_or)) %>%
+  ggplot(aes(x = sentiment, ymin = conf.low, ymax = conf.high)) +
+  geom_errorbar() +
+  geom_point(aes(sentiment, log_or)) +
+  ylab("Log odds ratio for association between Android and sentiment") +
+  coord_flip() 
+
+#
+android_iphone_or <- tweet_words %>%
+  count(word, source) %>%
+  pivot_wider(names_from = "source", values_from = "n", values_fill = 0) %>%
+  mutate(or = (Android + 0.5) / (sum(Android) - Android + 0.5) / 
+           ( (iPhone + 0.5) / (sum(iPhone) - iPhone + 0.5)))
+
+android_iphone_or %>% inner_join(nrc) %>%
+  filter(sentiment == "disgust" & Android + iPhone > 10) %>%
+  arrange(desc(or))
+
+#test
+android_iphone_or %>% inner_join(nrc, by = "word") %>%
+  mutate(sentiment = factor(sentiment, levels = log_or$sentiment)) %>%
+  mutate(log_or = log(or)) %>%
+  filter(Android + iPhone > 10 & abs(log_or)>1) %>%
+  mutate(word = reorder(word, log_or)) %>%
+  ggplot(aes(word, log_or, fill = log_or > 0)) +
+  facet_wrap(~sentiment, scales = "free_x", nrow = 2) + 
+  geom_bar(stat="identity", show.legend = FALSE) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+
+#
+library(dslabs)
+library(lubridate)
+options(digits = 3) 
+#q3
+library(dplyr)
+data(brexit_polls)
+a = brexit_polls %>%
+  mutate(month = month(startdate)) %>%
+  group_by(month) %>%
+  summarize(n = n())
+
+b = brexit_polls %>% 
+  mutate(week = round_date(enddate, "week")) %>%
+  group_by(week) %>%
+  summarize(n = n())
+
+#q4
+c = brexit_polls %>%
+  mutate(weekdays = weekdays(enddate)) %>%
+  group_by(weekdays) %>%
+  summarize(n = n()) %>%
+  arrange(desc(n))
+
+#q5
+data(movielens)
+a = movielens %>% 
+  mutate(t = as_datetime(timestamp)) %>%
+  mutate(year = year(t)) %>%
+  group_by(year) %>%
+  summarize(n = n()) %>%
+  arrange(desc(n))
+
+b = movielens %>% 
+  mutate(t = as_datetime(timestamp)) %>%
+  mutate(hour = hour(t)) %>%
+  group_by(hour) %>%
+  summarize(n = n()) %>%
+  arrange(desc(n))
+
+#q6
+#method1
+a = gutenberg_metadata %>%
+  filter(title == 'Pride and Prejudice')
+#method2
+library(stringr)
+b = gutenberg_metadata %>%
+  filter(str_detect(title, "Pride and Prejudice"))
+
+#q7
+gutenberg_works(title == "Pride and Prejudice")
+
+#8
+words = gutenberg_download(1342) %>% 
+  unnest_tokens(word, text)
+
+#9
+#  filter(!word %in% stop_words$word ) 
+
+words = words %>%
+  filter(!word %in% stop_words$word)
+nrow(words)
+
+#10 filter !str_detect(word, "^\\d+$")
+words = gutenberg_download(1342) %>% 
+  unnest_tokens(word, text)
+
+d = words %>%
+  filter(!word %in% stop_words$word & !str_detect(word,"^\\d+$"))
+nrow(d)
+#37334
+
+e = words %>% filter(!word %in% stop_words$word &
+           !str_detect(word, "^\\d$"))
+nrow(e)
+#37439 wrong
+
+f = words %>% filter(!word %in% stop_words$word &
+           !str_detect(word, "^\\d*$"))
+nrow(f)
+
+#q8 correct answer
+book <- gutenberg_download(1342)
+words <- book %>%
+  unnest_tokens(word, text)
+nrow(words)
+words <- words %>% anti_join(stop_words)
+nrow(words)
+words <- words %>%
+  filter(!str_detect(word, "\\d"))
+nrow(words)
+
+d = words %>% filter(!str_detect(word,"^\\d+$"))
+nrow(d)
+#37334 wrong
+
+e = words %>% filter(!str_detect(word,"^\\d"))
+nrow(e)
+#37331
+#let's see who they are!
+e1 = words %>% filter(str_detect(word,"^\\d"))
+
+f = words %>% filter(!str_detect(word,"\\d"))
+nrow(f)
+f1 = words %>% filter(str_detect(word,"\\d"))
+
+#q11
+book <- gutenberg_download(1342)
+words <- book %>%
+  unnest_tokens(word, text)
+nrow(words)
+words <- words %>% anti_join(stop_words)
+nrow(words)
+words <- words %>%
+  filter(!str_detect(word, "\\d"))
+nrow(words)
+
+a = words %>% 
+  group_by(word) %>% 
+  mutate(n = n()) %>%
+  filter(n>100) %>%
+  arrange(desc(n))
+nrow(a)
+#method2
+b = words %>%
+  count(word) %>%
+  filter(n > 100) %>%
+  arrange(desc(n))
+nrow(b)
+
+#q12
+afinn <- get_sentiments("afinn")
+a = words %>%
+  inner_join(afinn, by = 'word')
+nrow(a)
+#6064
+
+a %>% filter(value > 0) %>% nrow()
+#3413
+
+a %>% filter(value == 4) %>% nrow()
+#51
