@@ -4719,3 +4719,97 @@ a %>% filter(value > 0) %>% nrow()
 
 a %>% filter(value == 4) %>% nrow()
 #51
+
+#machine learning
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(caret)
+library(dslabs)
+data(heights)
+h = heights
+y = h$sex
+x = h$height
+set.seed(2007)
+# i is the index of a partition of h, length(i) == 10.
+i = createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+# tr is the train set
+tr = h[i, ]
+# t is the test set, nrow(t) == length(i)
+t = h[-i, ]
+# We want to compare the overall accuracy of 2 algos.
+# algo 1 (We did not train this simple algo.)
+# length(y1) == nrow(t) (== length(i))
+y1 = sample(c('Male','Female'), nrow(t), replace = TRUE) %>%
+  factor()
+mean(y1 == t$sex)
+# algo 2
+y2 = ifelse(t$height > 62, 'Male', 'Female') %>%
+  factor()
+mean(y2 == t$sex)
+# train
+cutoff <- seq(61, 70)
+accuracy <- map_dbl(cutoff, function(x){
+  y2 <- ifelse(tr$height > x, "Male", "Female") %>% 
+    factor()
+  mean(y2 == tr$sex)
+})
+max(accuracy)
+best_cutoff = cutoff[which.max(accuracy)]
+#test
+y2 <- ifelse(t$height > best_cutoff, "Male", "Female") %>% 
+  factor()
+mean(y2 == t$sex)
+table(predicted = y2, actual = t$sex)
+confusionMatrix(data = y2, reference = t$sex)
+#test
+cm = confusionMatrix(data = y2, reference = t$sex)
+
+#F1
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(caret)
+library(dslabs)
+data(heights)
+h = heights
+y = h$sex
+x = h$height
+set.seed(2007)
+i = createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+tr = h[i, ]
+t = h[-i, ]
+# train
+cutoff <- seq(61, 70)
+F1 <- map_dbl(cutoff, function(x){
+  y2 <- ifelse(tr$height > x, "Male", "Female") %>% 
+    factor()
+  F_meas(y2, tr$sex)
+})
+max(F1)
+best_cutoff = cutoff[which.max(F1)]
+#test
+y2 <- ifelse(t$height > best_cutoff, "Male", "Female") %>% 
+  factor()
+sensitivity(y2, t$sex)
+specificity(y2, t$sex)
+
+
+
+
+
+#data.frame(cutoff=cutoff,accuracy=accuracy) %>% 
+#  ggplot(aes(cutoff,accuracy)) + geom_point() + geom_line()
+
+
+
+#test to create matrix and list
+m = matrix(c(1,2,3,4), nrow = 2, ncol = 2)
+#l = list(1,2,3,4)
+l = list(m,c(1,2,3,4),i)
+i = createDataPartition(y, times = 1, p = 0.5, list = TRUE)
+l=list(movienames = c('harr', 'vold'))
+
+i = createDataPartition(y, times = 2, p = 0.5, list = TRUE)
+
+#
