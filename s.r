@@ -4794,22 +4794,520 @@ y2 <- ifelse(t$height > best_cutoff, "Male", "Female") %>%
 sensitivity(y2, t$sex)
 specificity(y2, t$sex)
 
-
-
-
-
 #data.frame(cutoff=cutoff,accuracy=accuracy) %>% 
 #  ggplot(aes(cutoff,accuracy)) + geom_point() + geom_line()
 
+#q
+library(dslabs)
+library(dplyr)
+library(lubridate)
+data(reported_heights)
+dat <- mutate(reported_heights, date_time = ymd_hms(time_stamp)) %>%
+  filter(date_time >= make_date(2016, 01, 25) & date_time < make_date(2016, 02, 1)) %>%
+  mutate(type = ifelse(day(date_time) == 25 & hour(date_time) == 8 & between(minute(date_time), 15, 30), "inclass","online")) %>%
+  select(sex, type)
+y <- factor(dat$sex, c("Female", "Male"))
+x <- dat$type
 
+#q1
+dat %>%
+  group_by(type) %>%
+  summarize(mean(sex == 'Female'))
+#q2
+y2 = ifelse(x == 'inclass', 'Female', 'Male') %>%
+  factor()
+mean(y2 == y)
+#q3
+table(pre = y2, act = y)
+#q4
+library(caret)
+sensitivity(y2, y)
+#q5
+specificity(y2, y)
+#q6
+mean(y == 'Female')
+#q7
+library(caret)
+library(purrr)
+data(iris)
+iris <- iris[-which(iris$Species=='setosa'),]
+y <- iris$Species
+#q8
+set.seed(2, sample.kind="Rounding") # if using R 3.6 or later
+i <- createDataPartition(y,times=1,p=0.5,list=FALSE)
+t <- iris[i,]
+tr <- iris[-i,]
 
-#test to create matrix and list
-m = matrix(c(1,2,3,4), nrow = 2, ncol = 2)
-#l = list(1,2,3,4)
-l = list(m,c(1,2,3,4),i)
-i = createDataPartition(y, times = 1, p = 0.5, list = TRUE)
-l=list(movienames = c('harr', 'vold'))
+c1 = seq(min(tr$Sepal.Length), max(tr$Sepal.Length), 0.1)
+accuracy1 = map_dbl(c1, function(x) {
+  y2 = ifelse(tr$Sepal.Length > x, 'virginica', 'versicolor')
+  mean(y2 == tr$Species)
+})
+max(accuracy1)
 
-i = createDataPartition(y, times = 2, p = 0.5, list = TRUE)
+c2 = seq(min(tr$Sepal.Width), max(tr$Sepal.Width), 0.1)
+accuracy2 = map_dbl(c2, function(x) {
+  y2 = ifelse(tr$Sepal.Width > x, 'virginica', 'versicolor')
+  mean(y2 == tr$Species)
+})
+max(accuracy2)
+
+c3 = seq(min(tr$Petal.Length), max(tr$Petal.Length), 0.1)
+accuracy3 = map_dbl(c3, function(x) {
+  y2 = ifelse(tr$Petal.Length > x, 'virginica', 'versicolor')
+  mean(y2 == tr$Species)
+})
+max(accuracy3)
+
+c4 = seq(min(tr$Petal.Width), max(tr$Petal.Width), 0.1)
+accuracy4 = map_dbl(c4, function(x) {
+  y2 = ifelse(tr$Petal.Width > x, 'virginica', 'versicolor')
+  mean(y2 == tr$Species)
+})
+max(accuracy4)
+
+#q9
+cQ9 = c3[which.max(accuracy3)]
+yQ9 = ifelse(t$Petal.Length > cQ9, 'virginica', 'versicolor')
+mean(yQ9 == t$Species)
+
+#q10
+c1 = seq(min(t$Sepal.Length), max(t$Sepal.Length), 0.1)
+accuracy1 = map_dbl(c1, function(x) {
+  y2 = ifelse(t$Sepal.Length > x, 'virginica', 'versicolor')
+  mean(y2 == t$Species)
+})
+max(accuracy1)
+
+c2 = seq(min(t$Sepal.Width), max(t$Sepal.Width), 0.1)
+accuracy2 = map_dbl(c2, function(x) {
+  y2 = ifelse(t$Sepal.Width > x, 'virginica', 'versicolor')
+  mean(y2 == t$Species)
+})
+max(accuracy2)
+
+c3 = seq(min(t$Petal.Length), max(t$Petal.Length), 0.1)
+accuracy3 = map_dbl(c3, function(x) {
+  y2 = ifelse(t$Petal.Length > x, 'virginica', 'versicolor')
+  mean(y2 == t$Species)
+})
+max(accuracy3)
+
+c4 = seq(min(t$Petal.Width), max(t$Petal.Width), 0.1)
+accuracy4 = map_dbl(c4, function(x) {
+  y2 = ifelse(t$Petal.Width > x, 'virginica', 'versicolor')
+  mean(y2 == t$Species)
+})
+max(accuracy4)
+
+#q11
+c3 = seq(min(tr$Petal.Length), max(tr$Petal.Length), 0.1)
+accuracy3 = map_dbl(c3, function(x) {
+  y2 = ifelse(tr$Petal.Length > x, 'virginica', 'versicolor')
+  mean(y2 == tr$Species)
+})
+max(accuracy3)
+
+c4 = seq(min(tr$Petal.Width), max(tr$Petal.Width), 0.1)
+accuracy4 = map_dbl(c4, function(x) {
+  y2 = ifelse(tr$Petal.Width > x, 'virginica', 'versicolor')
+  mean(y2 == tr$Species)
+})
+max(accuracy4)
+
+c3Q11 = c3[which.max(accuracy3)]
+c4Q11 = c4[which.max(accuracy4)]
+yQ11 = ifelse(t$Petal.Length > c3Q11 | t$Petal.Width > c4Q11, 'virginica', 'versicolor')
+mean(yQ11 == t$Species)
+
+#q4
+set.seed(1, sample.kind = "Rounding") # if using R 3.6 or later
+disease <- sample(c(0,1), size=1e6, replace=TRUE, prob=c(0.98,0.02))
+test <- rep(NA, 1e6)
+test[disease==0] <- sample(c(0,1), size=sum(disease==0), replace=TRUE, prob=c(0.90,0.10))
+test[disease==1] <- sample(c(0,1), size=sum(disease==1), replace=TRUE, prob=c(0.15, 0.85))
+#q6
+library(dslabs)
+library(dplyr)
+data("heights")
+heights %>% 
+	mutate(height = round(height)) %>%
+	group_by(height) %>%
+	summarize(p = mean(sex == "Male")) %>%
+	qplot(height, p, data =.)
+#q7
+ps <- seq(0, 1, 0.1)
+heights %>% 
+  mutate(g = cut(height, quantile(height, ps), include.lowest = TRUE)) %>%
+	group_by(g) %>%
+	summarize(p = mean(sex == "Male"), height = mean(height)) %>%
+	qplot(height, p, data =.)
+#q8
+Sigma <- 9*matrix(c(1,0.5,0.5,1), 2, 2)
+dat <- MASS::mvrnorm(n = 10000, c(69, 69), Sigma) %>%
+	data.frame() %>% setNames(c("x", "y"))
+ps <- seq(0, 1, 0.1)
+dat %>% 
+
+  mutate(g = cut(x, quantile(x, ps), include.lowest = TRUE)) %>%
+	group_by(g) %>%
+	summarize(y = mean(y), x = mean(x)) %>%
+
+	qplot(x, y, data =.)
+
+#q8t
+Sigma <- 9*matrix(c(1,0.5,0.5,1), 2, 2)
+dat <- MASS::mvrnorm(n = 10000, c(69, 69), Sigma) %>%
+	data.frame() %>% setNames(c("x", "y"))
+ps <- seq(0, 1, 0.1)
+dat %>% 
+
+  mutate(g = cut(x, quantile(x, ps), include.lowest = TRUE)) %>%
+	group_by(g) %>%
+	summarize(y =(y), x =(x)) %>%
+
+	qplot(x, y, data =.)
+
+#algo - linear
+library(dplyr)
+library(dslabs)
+library(caret)
+library(HistData)
+set.seed(1983)
+galton_heights <- GaltonFamilies %>%
+  filter(gender == "male") %>%
+  group_by(family) %>%
+  sample_n(1) %>%
+  ungroup() %>%
+  select(father, childHeight) %>%
+  rename(son = childHeight)
+y <- galton_heights$son
+test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+train_set <- galton_heights %>% slice(-test_index)
+test_set <- galton_heights %>% slice(test_index)
+m <- mean(train_set$son)
+m
+sqrt(mean((m - test_set$son)^2))
+fit <- lm(son ~ father, data = train_set)
+fit$coef
+y_hat <- fit$coef[1] + fit$coef[2]*test_set$father
+sqrt(mean((y_hat - test_set$son)^2))
+
+y_hat <- predict(fit, test_set)
+sqrt(mean((y_hat - test_set$son)^2))
+
+#q1
+library(dplyr)
+library(caret)
+set.seed(1, sample.kind="Rounding") # if using R 3.6 or later
+n <- 100
+Sigma <- 9*matrix(c(1.0, 0.5, 0.5, 1.0), 2, 2)
+dat <- MASS::mvrnorm(n = 100, c(69, 69), Sigma) %>%
+      data.frame() %>% setNames(c("x", "y"))
+set.seed(1, sample.kind="Rounding") # if using R 3.6 or later
+r = replicate(n=100, {
+  i = createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+  t = dat[i, ]
+  tr = dat[-i, ]
+  fit = lm(y ~ x, tr)
+  y_hat = predict(fit, t)
+  sqrt(mean((y_hat - t$y)^2))
+})
+mean(r)
+sd(r)
+
+#test again
+library(dplyr)
+library(caret)
+set.seed(1, sample.kind="Rounding") # if using R 3.6 or later
+n <- 100
+Sigma <- 9*matrix(c(1.0, 0.5, 0.5, 1.0), 2, 2)
+dat <- MASS::mvrnorm(n = 100, c(69, 69), Sigma) %>%
+      data.frame() %>% setNames(c("x", "y"))
+set.seed(1, sample.kind="Rounding") # if using R 3.6 or later
+r = replicate(n=100, {
+  i = createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+  t = dat[i, ]
+  tr = dat[-i, ]
+  fit = lm(y ~ x, tr)
+  y_hat = predict(fit, t)
+  sqrt(mean((y_hat - t$y)^2))
+})
+mean(r)
+sd(r)
+
+#q2
+library(dplyr)
+library(caret)
+set.seed(1, sample.kind="Rounding") # if using R 3.6 or later
+n = c(100, 500, 1000, 5000, 10000)
+sapply(n , function(n) {
+  Sigma <- 9*matrix(c(1.0, 0.5, 0.5, 1.0), 2, 2)
+  dat <- MASS::mvrnorm(n, c(69, 69), Sigma) %>%
+      data.frame() %>% setNames(c("x", "y"))
+  r = replicate(100, {
+    i = createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+    t = dat[i, ]
+    tr = dat[-i, ]
+    fit = lm(y ~ x, tr)
+    y_hat = predict(fit, t)
+    sqrt(mean((y_hat - t$y)^2))
+  })
+  c(mean = mean(r), sd = sd(r))
+})
+
+#q4
+library(dplyr)
+library(caret)
+set.seed(1, sample.kind="Rounding") # if using R 3.6 or later
+n <- 100
+Sigma <- 9*matrix(c(1.0, 0.95, 0.95, 1.0), 2, 2)
+dat <- MASS::mvrnorm(n = 100, c(69, 69), Sigma) %>%
+      data.frame() %>% setNames(c("x", "y"))
+set.seed(1, sample.kind="Rounding") # if using R 3.6 or later
+r = replicate(n, {
+  i = createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+  t = dat[i, ]
+  tr = dat[-i, ]
+  fit = lm(y ~ x, tr)
+  y_hat = predict(fit, t)
+  sqrt(mean((y_hat - t$y)^2))
+})
+mean(r)
+sd(r)
+
+#q6
+library(dplyr)
+library(caret)
+set.seed(1, sample.kind="Rounding") # if using R 3.6 or later
+Sigma <- matrix(c(1.0, 0.75, 0.75, 0.75, 1.0, 0.25, 0.75, 0.25, 1.0), 3, 3)
+dat <- MASS::mvrnorm(n = 100, c(0, 0, 0), Sigma) %>%
+	data.frame() %>% setNames(c("y", "x_1", "x_2"))
+set.seed(1, sample.kind="Rounding") # if using R 3.6 or later
+i = createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+t = dat[i, ]
+tr = dat[-i, ]
+fit = lm(y ~ x_1, tr)
+y_hat = predict(fit, t)
+sqrt(mean((y_hat - t$y)^2))
+
+fit = lm(y ~ x_2, tr)
+y_hat = predict(fit, t)
+sqrt(mean((y_hat - t$y)^2))
+
+fit = lm(y ~ x_1 + x_2, tr)
+y_hat = predict(fit, t)
+sqrt(mean((y_hat - t$y)^2))
+
+#q8
+library(dplyr)
+library(caret)
+set.seed(1, sample.kind="Rounding") # if using R 3.6 or later
+Sigma <- matrix(c(1.0, 0.75, 0.75, 0.75, 1.0, 0.95, 0.75, 0.95, 1.0), 3, 3)
+dat <- MASS::mvrnorm(n = 100, c(0, 0, 0), Sigma) %>%
+	data.frame() %>% setNames(c("y", "x_1", "x_2"))
+set.seed(1, sample.kind="Rounding") # if using R 3.6 or later
+i = createDataPartition(dat$y, times = 1, p = 0.5, list = FALSE)
+t = dat[i, ]
+tr = dat[-i, ]
+fit = lm(y ~ x_1, tr)
+y_hat = predict(fit, t)
+sqrt(mean((y_hat - t$y)^2))
+
+fit = lm(y ~ x_2, tr)
+y_hat = predict(fit, t)
+sqrt(mean((y_hat - t$y)^2))
+
+fit = lm(y ~ x_1 + x_2, tr)
+y_hat = predict(fit, t)
+sqrt(mean((y_hat - t$y)^2))
 
 #
+library(dplyr)
+library(caret)
+library(dslabs)
+data("heights")
+y <- heights$height
+
+set.seed(2007, sample.kind = "Rounding") #if you are using R 3.6 or later
+
+test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+train_set <- heights %>% slice(-test_index)
+test_set <- heights %>% slice(test_index)
+
+train_set %>% 
+  filter(round(height)==66) %>%
+  summarize(y_hat = mean(sex=="Female"))
+
+heights %>% 
+  mutate(x = round(height)) %>%
+  group_by(x) %>%
+  filter(n() >= 10) %>%
+  summarize(prop = mean(sex == "Female")) %>%
+  ggplot(aes(x, prop)) +
+  geom_point()
+lm_fit <- mutate(train_set, y = as.numeric(sex == "Female")) %>% lm(y ~ height, data = .)
+p_hat <- predict(lm_fit, test_set)
+y_hat <- ifelse(p_hat > 0.5, "Female", "Male") %>% factor()
+confusionMatrix(y_hat, test_set$sex)$overall["Accuracy"]
+
+#logistic regression
+library(dplyr)
+library(caret)
+library(dslabs)
+data("heights")
+y <- heights$height
+set.seed(2007, sample.kind = "Rounding") #if you are using R 3.6 or later
+test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+train_set <- heights %>% slice(-test_index)
+test_set <- heights %>% slice(test_index)
+
+glm_fit <- train_set %>% 
+  mutate(y = as.numeric(sex == "Female")) %>%
+  glm(y ~ height, data=., family = "binomial")
+p_hat_logit <- predict(glm_fit, newdata = test_set, type = "response")
+y_hat_logit <- ifelse(p_hat_logit > 0.5, "Female", "Male") %>% factor
+confusionMatrix(y_hat_logit, test_set$sex)$overall[["Accuracy"]]
+
+# 2 or 7
+library(dplyr)
+library(caret)
+library(dslabs)
+data("mnist_27")
+mnist_27$train %>% ggplot(aes(x_1, x_2, color = y)) + geom_point()
+fit <- mnist_27$train %>%
+  mutate(y = ifelse(y==7, 1, 0)) %>%
+  lm(y ~ x_1 + x_2, data = .)
+library(caret)
+p_hat <- predict(fit, newdata = mnist_27$test)
+y_hat <- factor(ifelse(p_hat > 0.5, 7, 2))
+confusionMatrix(y_hat, mnist_27$test$y)$overall[["Accuracy"]]
+
+#q1 intro
+set.seed(2, sample.kind="Rounding") #if you are using R 3.6 or later
+make_data <- function(n = 1000, p = 0.5, 
+				mu_0 = 0, mu_1 = 2, 
+				sigma_0 = 1,  sigma_1 = 1){
+
+y <- rbinom(n, 1, p)
+f_0 <- rnorm(n, mu_0, sigma_0)
+f_1 <- rnorm(n, mu_1, sigma_1)
+x <- ifelse(y == 1, f_1, f_0)
+  
+test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+
+list(train = data.frame(x = x, y = as.factor(y)) %>% slice(-test_index),
+	test = data.frame(x = x, y = as.factor(y)) %>% slice(test_index))
+}
+dat <- make_data()
+
+dat$train %>% ggplot(aes(x, color = y)) + geom_density()
+
+#q1 final
+set.seed(1, sample.kind="Rounding") #if you are using R 3.6 or later
+make_data <- function(n = 1000, p = 0.5, 
+				mu_0 = 0, mu_1 = 2, 
+				sigma_0 = 1,  sigma_1 = 1){
+
+y <- rbinom(n, 1, p)
+f_0 <- rnorm(n, mu_0, sigma_0)
+f_1 <- rnorm(n, mu_1, sigma_1)
+x <- ifelse(y == 1, f_1, f_0)
+  
+test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+
+list(train = data.frame(x = x, y = as.factor(y)) %>% slice(-test_index),
+	test = data.frame(x = x, y = as.factor(y)) %>% slice(test_index))
+}
+
+mu_1 <- seq(0, 3, len=25)
+dat = sapply(mu_1, make_data)
+
+#q1 test
+mu_1 <- seq(0, 3, len=25)
+make_data <- function(n = 1000, p = 0.5, 
+				mu_0 = 0, mu_1, 
+				sigma_0 = 1,  sigma_1 = 1){
+
+mu_1 * 10
+}
+#make_data = function(mu_1) {mu_1 * 10}
+t = sapply(mu_1, make_data(n = 1000, p = 0.5, 
+				mu_0 = 0, mu_1, 
+				sigma_0 = 1,  sigma_1 = 1))
+
+#q1 test 2
+library(dplyr)
+library(caret)
+library(dslabs)
+set.seed(1, sample.kind="Rounding") #if you are using R 3.6 or later
+mu_1 <- seq(0, 3, len=25)
+make_data <- function(mu_1){
+  n = 1000
+  p = 0.5
+	mu_0 = 0
+	sigma_0 = 1
+  sigma_1 = 1
+  
+  y <- rbinom(n, 1, p)
+  f_0 <- rnorm(n, mu_0, sigma_0)
+  f_1 <- rnorm(n, mu_1, sigma_1)
+  x <- ifelse(y == 1, f_1, f_0)
+  
+  test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+
+  train = data.frame(x = x, y = as.factor(y)) %>% slice(-test_index)
+	test = data.frame(x = x, y = as.factor(y)) %>% slice(test_index)
+
+  glm_fit = train %>% 
+    glm(y ~ x, data = ., family = 'binomial')
+  p_hat_logit = predict(glm_fit, newdata = test, type = 'response')
+  y_hat_logit = ifelse(p_hat_logit > 0.5, 1, 0) %>% factor()
+  res = confusionMatrix(y_hat_logit, test$y)$overall[["Accuracy"]]
+  c(mu_1, res)
+}
+#make_data = function(mu_1) {mu_1 * 10}
+t = sapply(mu_1, make_data) 
+mu_1 = t[1,]
+res = t[2,]
+
+d = data.frame(mu_1, res)
+d %>% ggplot(aes(mu_1,res)) + geom_point()
+
+#q1 test 3
+library(dplyr)
+library(caret)
+library(dslabs)
+set.seed(1, sample.kind="Rounding") #if you are using R 3.6 or later
+mu_1 <- seq(0, 3, len=25)
+make_data <- function(mu_1){
+  n = 1000
+  p = 0.5
+	mu_0 = 0
+	sigma_0 = 1
+  sigma_1 = 1
+  
+  y <- rbinom(n, 1, p)
+  f_0 <- rnorm(n, mu_0, sigma_0)
+  f_1 <- rnorm(n, mu_1, sigma_1)
+  x <- ifelse(y == 1, f_1, f_0)
+  
+  test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+
+  train = data.frame(x = x, y = as.factor(y)) %>% slice(-test_index)
+	test = data.frame(x = x, y = as.factor(y)) %>% slice(test_index)
+
+  glm_fit = train %>% 
+    glm(y ~ x, data = ., family = 'binomial')
+  p_hat_logit = predict(glm_fit, newdata = test, type = 'response')
+  y_hat_logit = ifelse(p_hat_logit > 0.5, 1, 0) %>% factor()
+  res = mean(y_hat_logit == test$y)
+  c(mu_1, res)
+}
+#make_data = function(mu_1) {mu_1 * 10}
+t = sapply(mu_1, make_data) 
+mu_1 = t[1,]
+res = t[2,]
+
+d = data.frame(mu_1, res)
+d %>% ggplot(aes(mu_1,res)) + geom_point()
