@@ -5311,3 +5311,222 @@ res = t[2,]
 
 d = data.frame(mu_1, res)
 d %>% ggplot(aes(mu_1,res)) + geom_point()
+
+#
+library(dplyr)
+library(ggplot2)
+library(dslabs)
+data(polls_2008)
+qplot(day, margin, data = polls_2008)
+
+span <- 7 
+fit <- with(polls_2008, 
+            ksmooth(day, margin, kernel = "box", bandwidth = span))
+
+polls_2008 %>% mutate(smooth = fit$y) %>%
+  ggplot(aes(day, margin)) +
+  geom_point(size = 3, alpha = .5, color = "grey") + 
+  geom_line(aes(day, smooth), color="red")
+
+#test
+span <- 7 
+f <- ksmooth(polls_2008$day, polls_2008$margin, kernel = "box", bandwidth = span)
+
+#kernel
+span <- 7 
+fit <- ksmooth(polls_2008$day, polls_2008$margin, kernel = "normal", bandwidth = span)
+polls_2008 %>% mutate(smooth = fit$y) %>%
+  ggplot(aes(day, margin)) +
+  geom_point(size = 3, alpha = .5, color = "grey") + 
+  geom_line(aes(day, smooth), color="red")
+
+#loess
+total_days <- diff(range(polls_2008$day))
+span <- 21/total_days
+
+fit <- loess(margin ~ day, degree=1, span = span, data=polls_2008)
+
+polls_2008 %>% mutate(smooth = fit$fitted) %>%
+  ggplot(aes(day, margin)) +
+  geom_point(size = 3, alpha = .5, color = "grey") +
+  geom_line(aes(day, smooth), color="red")
+
+#q1
+library(dplyr)
+library(ggplot2)
+
+#matrix
+m = matrix(c(1:4), 2, 2)
+m - rowMeans(m)
+
+a = sweep(X, 2, colMeans(X))
+
+#q1
+set.seed(1)
+x <- matrix(rnorm(100*10), 100, 10)
+#q3
+head(x + seq(nrow(x)))
+head(sweep(x, 1, 1:nrow(x),"+"))
+#q4
+set.seed(1)
+x <- matrix(rnorm(100*10), 100, 10)
+#q5
+set.seed(1)
+x <- matrix(rnorm(100*10), 100, 10)
+
+#test
+x = matrix(c(1:6), 3, 2)
+
+a=crossprod(x)
+b=solve(crossprod(x))
+a%*%b
+
+#
+library(dplyr)
+library(ggplot2)
+library(dslabs)
+mnist = read_mnist()
+x <- mnist$train$images[1:1000,] 
+y <- mnist$train$labels[1:1000]
+grid <- matrix(x[3,], 28, 28)
+image(1:28, 1:28, grid)
+image(1:28, 1:28, grid[, 28:1])
+tibble(labels = as.factor(y), row_averages = rowMeans(x)) %>% 
+  qplot(labels, row_averages, data = ., geom = "boxplot") 
+library(matrixStats)
+sds <- colSds(x)
+qplot(sds, bins = "30", color = I("black"))
+image(1:28, 1:28, matrix(sds, 28, 28)[, 28:1])
+new_x <- x[ ,colSds(x) > 60]
+dim(new_x)
+class(x[ , 1, drop=FALSE])
+dim(x[, 1, drop=FALSE])
+qplot(as.vector(x), bins = 30, color = I("black"))
+new_x <- x
+new_x[new_x < 50] <- 0
+
+#q6
+library(dplyr)
+library(ggplot2)
+library(dslabs)
+mnist = read_mnist()
+x <- mnist$train$images
+a = x > 50 & x < 205
+mean(a)
+
+#smooth
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(lubridate)
+library(purrr)
+library(pdftools)
+    
+fn <- system.file("extdata", "RD-Mortality-Report_2015-18-180531.pdf", package="dslabs")
+dat <- map_df(str_split(pdf_text(fn), "\n"), function(s){
+	s <- str_trim(s)
+	header_index <- str_which(s, "2015")[1]
+	tmp <- str_split(s[header_index], "\\s+", simplify = TRUE)
+	month <- tmp[1]
+	header <- tmp[-1]
+	tail_index  <- str_which(s, "Total")
+	n <- str_count(s, "\\d+")
+	out <- c(1:header_index, which(n==1), which(n>=28), tail_index:length(s))
+	s[-out] %>%
+		str_remove_all("[^\\d\\s]") %>%
+		str_trim() %>%
+		str_split_fixed("\\s+", n = 6) %>%
+		.[,1:5] %>%
+		as_data_frame() %>% 
+		setNames(c("day", header)) %>%
+		mutate(month = month,
+			day = as.numeric(day)) %>%
+		gather(year, deaths, -c(day, month)) %>%
+		mutate(deaths = as.numeric(deaths))
+}) %>%
+	mutate(month = recode(month, "JAN" = 1, "FEB" = 2, "MAR" = 3, "APR" = 4, "MAY" = 5, "JUN" = 6, 
+                          "JUL" = 7, "AGO" = 8, "SEP" = 9, "OCT" = 10, "NOV" = 11, "DEC" = 12)) %>%
+	mutate(date = make_date(year, month, day)) %>%
+        dplyr::filter(date <= "2018-05-01")
+
+d2 = dat %>%
+  filter(!is.na(deaths) & !is.na(date)) %>%
+  mutate(date2 = as.numeric(date) - 16435)
+t=as.numeric(diff(range(d2$date2)))
+fit = loess(deaths ~ date2, degree = 1, span = span, data = d2)
+
+
+d2 %>% mutate(smooth = fit$fitted) %>%
+  ggplot(aes(date2, deaths)) + 
+  geom_point(size = 3, alpha = 0.5, color = 'grey') + 
+  geom_line(aes(date2, smooth), color = 'red')
+
+#test
+x=1:100
+y=rnorm(100)
+x[33] = NA
+y[77] = NA
+#fit = lm(y~x)
+fit = loess(y~x)
+dat = data.frame(x=x,y=y) %>%
+  mutate(smooth = fit$fitted) %>%
+  ggplot() + 
+  geom_point(aes(x,y)) + 
+  geom_line(aes(x,smooth))
+
+#
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(lubridate)
+library(purrr)
+library(pdftools)
+    
+fn <- system.file("extdata", "RD-Mortality-Report_2015-18-180531.pdf", package="dslabs")
+dat <- map_df(str_split(pdf_text(fn), "\n"), function(s){
+	s <- str_trim(s)
+	header_index <- str_which(s, "2015")[1]
+	tmp <- str_split(s[header_index], "\\s+", simplify = TRUE)
+	month <- tmp[1]
+	header <- tmp[-1]
+	tail_index  <- str_which(s, "Total")
+	n <- str_count(s, "\\d+")
+	out <- c(1:header_index, which(n==1), which(n>=28), tail_index:length(s))
+	s[-out] %>%
+		str_remove_all("[^\\d\\s]") %>%
+		str_trim() %>%
+		str_split_fixed("\\s+", n = 6) %>%
+		.[,1:5] %>%
+		as_data_frame() %>% 
+		setNames(c("day", header)) %>%
+		mutate(month = month,
+			day = as.numeric(day)) %>%
+		gather(year, deaths, -c(day, month)) %>%
+		mutate(deaths = as.numeric(deaths))
+}) %>%
+	mutate(month = recode(month, "JAN" = 1, "FEB" = 2, "MAR" = 3, "APR" = 4, "MAY" = 5, "JUN" = 6, 
+                          "JUL" = 7, "AGO" = 8, "SEP" = 9, "OCT" = 10, "NOV" = 11, "DEC" = 12)) %>%
+	mutate(date = make_date(year, month, day)) %>%
+        dplyr::filter(date <= "2018-05-01")
+
+span <- 60 / as.numeric(diff(range(dat$date)))
+fit <- dat %>% mutate(x = as.numeric(date)) %>% loess(deaths ~ x, data = ., span = span, degree = 1)
+dat %>% mutate(smooth = predict(fit, as.numeric(date))) %>%
+	ggplot() +
+	geom_point(aes(date, deaths)) +
+	geom_line(aes(date, smooth), lwd = 2, col = "red")
+
+#
+library(dslabs)
+library(broom)
+mnist_27$train %>% glm(y ~ x_2, family = "binomial", data = .) %>% tidy()
+qplot(x_2, y, data = mnist_27$train)
+
+
+fit = loess(as.numeric(y) ~ x_2, data = mnist_27$train)
+mnist_27$train %>% mutate(smooth = predict(fit, x_2)) %>%
+  ggplot() +
+#  geom_point(aes(x_2, y))
+  geom_line(aes(x_2, smooth), lwd = 2, col = "red") 
