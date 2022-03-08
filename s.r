@@ -5691,3 +5691,164 @@ n = 2:12
 sapply(n, function(n) {
   6 * nrow(combinations(n, 2)) * 3
 })
+#3
+head(esoph)
+library(dplyr)
+all_cases = sum(esoph$ncases)
+all_controls = sum(esoph$ncontrols)
+#4a
+levels(esoph$alcgp)
+
+a = esoph %>% 
+  select(alcgp, ncases, ncontrols) %>%
+  filter(alcgp == '120+') %>%
+  mutate(n = ncases + ncontrols)
+sum(a$ncases)/sum(a$n)
+#4b
+b = esoph %>% 
+  select(alcgp, ncases, ncontrols) %>%
+  filter(alcgp == '0-39g/day') %>%
+  mutate(n = ncases + ncontrols)
+sum(b$ncases)/sum(b$n)
+
+
+a = esoph %>%
+  filter(alcgp == '120+')
+
+sum(a$ncases) / (sum(a$ncases) + sum(a$ncontrols))
+
+b = esoph %>%
+  filter(alcgp == '0-39g/day')
+sum(b$ncases) / (sum(b$ncases) + sum(b$ncontrols))
+
+c = esoph %>% 
+  filter(ncases >0)
+sum(c$ncases)
+c1 = c %>%
+  filter(tobgp != '0-9g/day')
+sum(c1$ncases)
+sum(c1$ncases)/sum(c$ncases)
+
+d = esoph %>% 
+  filter(ncontrols >0)
+sum(d$ncontrols)
+d1 = d %>%
+  filter(tobgp != '0-9g/day')
+sum(d1$ncontrols)
+sum(d1$ncontrols)/sum(d$ncontrols)
+
+#5a
+all_cases = sum(esoph$ncases)
+all_controls = sum(esoph$ncontrols)
+a = esoph %>%
+  filter(alcgp == '120+') %>%
+  pull(ncases) %>%
+  sum()
+a/all_cases
+#5b
+levels(esoph$tobgp)
+all_cases = sum(esoph$ncases)
+all_controls = sum(esoph$ncontrols)
+b = esoph %>%
+  filter(tobgp == '30+') %>%
+  pull(ncases) %>%
+  sum()
+b/all_cases
+#5c
+all_cases = sum(esoph$ncases)
+all_controls = sum(esoph$ncontrols)
+c = esoph %>%
+  filter(alcgp == '120+' & tobgp == '30+') %>%
+  pull(ncases) %>%
+  sum()
+c/all_cases
+#5d
+all_cases = sum(esoph$ncases)
+all_controls = sum(esoph$ncontrols)
+d = esoph %>%
+  filter(alcgp == '120+' | tobgp == '30+') %>%
+  pull(ncases) %>%
+  sum()
+d/all_cases
+
+#6a
+all_cases = sum(esoph$ncases)
+all_controls = sum(esoph$ncontrols)
+a6 = esoph %>%
+  filter(alcgp == '120+') %>%
+  pull(ncontrols) %>%
+  sum()
+co = a6/all_controls
+co
+#6b
+#5a
+all_cases = sum(esoph$ncases)
+all_controls = sum(esoph$ncontrols)
+a5 = esoph %>%
+  filter(alcgp == '120+') %>%
+  pull(ncases) %>%
+  sum()
+ca = a5/all_cases
+ca
+#6a
+all_cases = sum(esoph$ncases)
+all_controls = sum(esoph$ncontrols)
+a6 = esoph %>%
+  filter(alcgp == '120+') %>%
+  pull(ncontrols) %>%
+  sum()
+co = a6/all_controls
+co
+ca/co
+
+
+b = esoph %>%
+  filter(alcgp == '120+') %>%
+  pull(ncases) %>%
+  sum()
+b/a
+#6c
+levels(esoph$tobgp)
+all_cases = sum(esoph$ncases)
+all_controls = sum(esoph$ncontrols)
+b = esoph %>%
+  filter(tobgp == '30+') %>%
+  pull(ncontrols) %>%
+  sum()
+b/all_controls
+#6d
+all_cases = sum(esoph$ncases)
+all_controls = sum(esoph$ncontrols)
+c = esoph %>%
+  filter(alcgp == '120+' & tobgp == '30+') %>%
+  pull(ncontrols) %>%
+  sum()
+c/all_controls
+#6e
+all_cases = sum(esoph$ncases)
+all_controls = sum(esoph$ncontrols)
+e = esoph %>%
+  filter(alcgp == '120+' | tobgp == '30+') %>%
+  pull(ncontrols) %>%
+  sum()
+e/all_controls
+#6f
+#5d
+all_cases = sum(esoph$ncases)
+all_controls = sum(esoph$ncontrols)
+d = esoph %>%
+  filter(alcgp == '120+' | tobgp == '30+') %>%
+  pull(ncases) %>%
+  sum()
+d5 = d/all_cases
+d5
+#6e
+all_cases = sum(esoph$ncases)
+all_controls = sum(esoph$ncontrols)
+e = esoph %>%
+  filter(alcgp == '120+' | tobgp == '30+') %>%
+  pull(ncontrols) %>%
+  sum()
+e6 = e/all_controls
+e6
+d5/e6
