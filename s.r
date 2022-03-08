@@ -5530,3 +5530,164 @@ mnist_27$train %>% mutate(smooth = predict(fit, x_2)) %>%
   ggplot() +
 #  geom_point(aes(x_2, y))
   geom_line(aes(x_2, smooth), lwd = 2, col = "red") 
+
+#
+beads <- rep(c("red", "blue"), times = c(2,3))    # create an urn with 2 red, 3 blue
+beads    # view beads object
+sample(beads, 1)    # sample 1 bead at random
+
+B <- 10000    # number of times to draw 1 bead
+events <- replicate(B, sample(beads, 1))    # draw 1 bead, B times
+tab <- table(events)    # make a table of outcome counts
+tab    # view count table
+prop.table(tab) 
+
+#stick
+set.seed(1898)
+B <- 10000
+my_pick <- replicate(B, {
+	doors <- as.character(1:3)
+	prize <- sample(c("car","goat","goat"))    # puts prizes in random order
+	prize_door <- doors[prize == "car"]    # note which door has prize
+	my_pick  <- sample(doors, 1)    # note which door is chosen
+	show <- sample(doors[!doors %in% c(my_pick, prize_door)],1)    # open door with no prize that isn't chosen
+  my_pick == prize_door    # test whether the original door has the prize
+})
+mean(my_pick) 
+
+#switch
+switch <- replicate(B, {
+	doors <- as.character(1:3)
+	prize <- sample(c("car","goat","goat"))    # puts prizes in random order
+	prize_door <- doors[prize == "car"]    # note which door has prize
+	my_pick  <- sample(doors, 1)    # note which door is chosen first
+	show <- sample(doors[!doors %in% c(my_pick, prize_door)], 1)    # open door with no prize that isn't chosen
+	switch <- doors[!doors%in%c(my_pick, show)]    # switch to the door that wasn't chosen first or opened
+	switch == prize_door    # test whether the switched door has the prize
+})
+mean(switch) 
+
+#combination and permutation
+suits <- c("Diamonds", "Clubs", "Hearts", "Spades")
+numbers <- c("Ace", "Deuce", "Three", "Four", "Five", "Six", 
+  "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King")
+deck <- expand.grid(number = numbers, suit = suits)
+deck <- paste(deck$number, deck$suit)
+kings <- paste("King", suits)
+mean(deck %in% kings)
+
+library(gtools)
+permutations(5,2)
+
+#
+all_phone_numbers <- permutations(10, 7, v = 0:9)
+n <- nrow(all_phone_numbers)
+index <- sample(n, 5)
+all_phone_numbers[index,]
+
+#
+suits <- c("Diamonds", "Clubs", "Hearts", "Spades")
+numbers <- c("Ace", "Deuce", "Three", "Four", "Five", "Six", 
+  "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King")
+deck <- expand.grid(number = numbers, suit = suits)
+deck <- paste(deck$number, deck$suit)
+kings <- paste("King", suits)
+mean(deck %in% kings)
+hands <- permutations(52,2, v = deck)
+
+first_card <- hands[,1]
+second_card <- hands[,2]
+sum(first_card %in% kings)
+
+sum(first_card %in% kings & second_card %in% kings) / sum(first_card %in% kings)
+
+#
+library(gtools)
+aces <- paste("Ace", suits)
+facecard <- c("King", "Queen", "Jack", "Ten")
+facecard <- expand.grid(number = facecard, suit = suits)
+facecard <- paste(facecard$number, facecard$suit)
+hands = combinations(52, 2, v = deck)
+mean(hands[, 1] %in% aces & hands[, 2] %in% facecard)
+
+#
+blackjack <- function(){
+   hand <- sample(deck, 2)
+  (hand[1] %in% aces & hand[2] %in% facecard) | 
+    (hand[2] %in% aces & hand[1] %in% facecard)
+}
+B <- 10000
+results <- replicate(B, {
+    hand <- sample(deck, 2)
+    (hand[1] %in% aces & hand[2] %in% facecard) | (hand[2] %in% aces & hand[1] %in% facecard)
+})
+mean(results)
+
+#
+n <- 50
+bdays <- sample(1:365, n, replace = TRUE)    # generate n random birthdays
+any(duplicated(bdays))    # check if any birthdays are duplicated
+B <- 10000
+results <- replicate(B, {    # returns vector of B logical values
+    bdays <- sample(1:365, n, replace = TRUE)
+    any(duplicated(bdays))
+})
+mean(results) 
+
+#
+n = 6
+outcomes = c(0, 1)
+l = rep(list(outcomes), n)
+p = expand.grid(l)
+r = sapply(1:64, function(a){
+  sum(p[a,])>=4
+})
+mean(r)
+
+#
+B = 10000
+set.seed(1)
+results = replicate(B, {
+  s = sample(c(0,1), replace = TRUE, 6)
+  sum(s) >= 4
+})
+mean(results)
+
+#
+library(gtools)
+library(dplyr)
+library(ggplot2)
+
+#q1.1
+library(gtools)
+medals <- permutations(8,3)
+nrow(medals)
+#q1.2
+library(gtools)
+medals <- permutations(3,3)
+nrow(medals)
+#q1.4
+runners <- c("Jamaica", "Jamaica", "Jamaica", "USA", "Ecuador", 
+"Netherlands", "France", "South Africa")
+set.seed(1)
+r = replicate(10000, {
+  s = sample(runners, 3) == c("Jamaica", "Jamaica", "Jamaica")
+  mean(s) == 1
+})
+mean(r)
+#q2.1
+6 * nrow(combinations(6, 2)) * 2
+#q2.b
+6 * nrow(combinations(6, 2)) * 3
+#q2.c
+6 * nrow(combinations(6, 3)) * 3
+#q2.d
+n = 1:12
+sapply(n, function(n) {
+  n * nrow(combinations(6, 2)) * 3
+})
+#q2.e
+n = 2:12
+sapply(n, function(n) {
+  6 * nrow(combinations(n, 2)) * 3
+})
