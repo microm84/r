@@ -5852,3 +5852,147 @@ e = esoph %>%
 e6 = e/all_controls
 e6
 d5/e6
+
+#
+library(dplyr)
+library(ggplot2)
+x <- seq(-4, 4, length = 100)
+data.frame(x, f = dnorm(x)) %>%
+    ggplot(aes(x, f)) +
+    geom_line()
+
+#
+set.seed(16, sample.kind = 'Rounding')
+act_scores = rnorm(10000, 20.9, 5.7)
+mean(act_scores)
+sd(act_scores)
+
+library(dplyr)
+data.frame(a = act_scores) %>%
+  filter(a >= 36)
+
+sum(act_scores>=36)
+
+mean(act_scores > 30)
+mean(act_scores <= 10)
+
+#2
+x = 1:36
+f_x = dnorm(x, 20.9, 5.7)
+data.frame(x, f_x) %>%
+  ggplot(aes(x, f_x)) +
+  geom_line()
+
+#3.a
+set.seed(16, sample.kind = 'Rounding')
+act_scores = rnorm(10000, 20.9, 5.7)
+mean(act_scores)
+sd(act_scores)
+z = (act_scores - mean(act_scores)) / sd(act_scores)
+1 - pnorm(2, mean(z), sd(z))
+mean(z > 2)
+
+#3.b
+mean(act_scores) + 2 * sd(act_scores)
+#3.c
+qnorm(0.975, mean(act_scores), sd(act_scores))
+#4.a
+set.seed(16, sample.kind = 'Rounding')
+act_scores = rnorm(10000, 20.9, 5.7)
+x = 1:36
+cdf = sapply(x, function(x) {
+  mean(act_scores <= x)
+})
+min(which(cdf >= 0.95))
+#4.b
+qnorm(0.95, 20.9, 5.7)
+#4.c
+set.seed(16, sample.kind = 'Rounding')
+act_scores = rnorm(10000, 20.9, 5.7)
+p <- seq(0.01, 0.99, 0.01)
+sample_quantiles = quantile(act_scores, p)
+#4.d
+theoretical_quantiles = qnorm(p, 20.9, 5.7)
+qqplot(theoretical_quantiles, sample_quantiles)
+
+#1b
+p=1/5
+a <- 1
+b <- -0.25
+mu <- a*p + b*(1-p)
+n <- 44
+n*mu
+sqrt(n)*(a-b)*sqrt(p*(1-p))
+sigma <- sqrt(n) * abs(b-a) * sqrt(p*(1-p))
+1-pnorm(8, mu, sigma)
+#1f
+set.seed(21, sample.kind = "Rounding")
+B <- 10000
+n <- 44
+p <- 0.2
+tests <- replicate(B, {
+  X <- sample(c(1, -0.25), n, replace = TRUE, prob = c(p, 1-p))
+  sum(X)
+})
+mean(tests >= 8)
+#2a
+p <- 1/4
+a <- 1
+b <- 0
+n <- 44
+mu <- n * a*p + b*(1-p)
+mu
+#2b
+p <- seq(0.25, 0.95, 0.05)
+exp_val <- sapply(p, function(x){
+  mu <- n * a*x + b*(1-x)
+  sigma <- sqrt(n) * abs(b-a) * sqrt(x*(1-x))
+  1-pnorm(35, mu, sigma)
+})
+min(p[which(exp_val > 0.8)])
+#3a
+p <- 5/38
+a <- 6
+b <- -1
+mu <- a*p + b*(1-p)
+mu
+#3b
+sigma <- abs(b-a) * sqrt(p*(1-p))
+#3d
+n=500
+sigma / sqrt(n)
+#3e
+n*mu
+#3f
+sqrt(n)*sigma
+#3e
+pnorm(0, n*mu, sqrt(n)*sigma)
+
+#
+library(dslabs)
+data(tissue_gene_expression)
+dim(tissue_gene_expression$x)
+table(tissue_gene_expression$y)
+d <- dist(tissue_gene_expression$x)
+ind <- c(1, 2, 39, 40, 73, 74)
+as.matrix(d)[ind,ind]
+
+d2=as.matrix(d)
+d2[1,2]
+d2[39,40]
+d2[73,74]
+d2[1,39]
+d2[39,73]
+d2[1,73]
+as.matrix(d)[1:2, 1:2]
+as.matrix(d)[39:40, 39:40]
+as.matrix(d)[73:74, 73:74]
+
+
+x=tissue_gene_expression$x
+x1=x[1,]
+x2=x[2,]
+x39=x[39,]
+x40=x[40,]
+x73=x[73,]
+x74=x[74,]
