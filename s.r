@@ -5996,3 +5996,483 @@ x39=x[39,]
 x40=x[40,]
 x73=x[73,]
 x74=x[74,]
+
+#
+library(dslabs)
+data("mnist_27")
+library(caret)
+train_knn <- train(y ~ ., method = "knn", 
+                   data = mnist_27$train,
+                   tuneGrid = data.frame(k = seq(9, 71, 2)))
+train_knn$bestTune
+
+#
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(caret)
+library(dslabs)
+set.seed(1)
+data(heights)
+h = heights
+y = h$sex
+x = h$height
+# i is the index of a partition of h, length(i) == 10.
+i = createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+# t is the test set
+t = h[i, ]
+# t is the train set, nrow(t) == length(i)
+tr = h[-i, ]
+
+#
+library(rpart)
+n <- 1000
+sigma <- 0.25
+# set.seed(1) # if using R 3.5 or ealier
+set.seed(1, sample.kind = "Rounding") # if using R 3.6 or later
+x <- rnorm(n, 0, 1)
+y <- 0.75 * x + rnorm(n, 0, sigma)
+dat <- data.frame(x = x, y = y)
+fit <- rpart(y ~ ., data = dat)
+plot(fit, margin = 0.1)
+text(fit, cex = 0.75)
+
+dat %>% 
+	mutate(y_hat = predict(fit)) %>% 
+	ggplot() +
+	geom_point(aes(x, y)) +
+  geom_step(aes(x, y_hat), col=2)
+
+#
+library(rpart)
+n <- 1000
+sigma <- 0.25
+# set.seed(1) # if using R 3.5 or ealier
+set.seed(1, sample.kind = "Rounding") # if using R 3.6 or later
+x <- rnorm(n, 0, 1)
+y <- 0.75 * x + rnorm(n, 0, sigma)
+dat <- data.frame(x = x, y = y)
+
+library(randomForest)
+fit <- randomForest(y ~ x, data = dat)
+dat %>% 
+	mutate(y_hat = predict(fit)) %>% 
+	ggplot() +
+	geom_point(aes(x, y)) +
+	geom_step(aes(x, y_hat), col = "red")
+
+#
+library(caret)
+library(rpart)
+library(dslabs)
+set.seed(1991, sample.kind = 'Rounding')
+data(tissue_gene_expression)
+fit = caret::train(tissue_gene_expression$x, tissue_gene_expression$y, method = 'rpart', tuneGrid = data.frame(cp = seq(0, 0.1, 0.01)))
+ggplot(fit)
+
+#q2
+library(caret)
+library(rpart)
+library(dslabs)
+set.seed(1991, sample.kind = 'Rounding')
+data(tissue_gene_expression)
+fit2 = caret::train(tissue_gene_expression$x, tissue_gene_expression$y, 
+method = 'rpart', tuneGrid = data.frame(cp = seq(0, 0.1, 0.01)), 
+control = rpart.control(minsplit = 0))
+
+#q3
+library(caret)
+library(rpart)
+library(dslabs)
+set.seed(1991, sample.kind = 'Rounding')
+data(tissue_gene_expression)
+fit3 = rpart(tissue_gene_expression$y ~ tissue_gene_expression$x)
+plot(fit3)
+text(fit3)
+
+fit2 = caret::train(tissue_gene_expression$x, tissue_gene_expression$y, 
+method = 'rpart', tuneGrid = data.frame(cp = seq(0, 0.1, 0.01)), 
+control = rpart.control(minsplit = 0))
+
+#q4
+library(caret)
+library(rpart)
+library(dslabs)
+set.seed(1991, sample.kind = 'Rounding')
+data(tissue_gene_expression)
+fit = caret::train(tissue_gene_expression$x, tissue_gene_expression$y, 
+method = 'rf', tuneGrid = data.frame(mtry = seq(50, 200, 25)), nodesize = 1)
+
+#
+#F1
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(caret)
+library(dslabs)
+data(heights)
+h = heights
+y = h$sex
+x = h$height
+set.seed(1)
+i = createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+tr = h[i, ]
+t = h[-i, ]
+
+k = seq(1, 101, 3)
+a = sapply(k, function(k){
+  fit = knn3(as.matrix(tr$sex), factor(tr$height), k = k)
+  y_hat = predict(fit, t) %>% factor()
+  F_meas(y_hat, reference = factor(t$sex))
+})
+r = data.frame(k=k,a=a)
+
+#test
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(caret)
+library(dslabs)
+data(heights)
+set.seed(1, sample.kind = 'Rounding')
+
+h = heights
+y = h$sex
+x = h$height
+i = createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+tr = h[-i, ]
+t = h[i, ]
+
+ks = seq(1, 101, 3)
+a = sapply(ks, function(k){
+  fit = knn3(sex ~ height, data = tr, k = k)
+  y_hat = predict(fit, t, type ='class') %>% factor(levels = levels(tr$sex))
+  F_meas(y_hat, reference = factor(t$sex))
+})
+data.frame(k=k,a=a)
+
+r %>% ggplot(aes(k, a)) + geom_point() + geom_line()
+#
+fit = knn3(tr$sex ~ tr$height, data = tr, k = 5)
+y2 = predict(fit, t, type ='class')
+F_meas(y2, reference = factor(t$sex))
+
+#q2
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(caret)
+library(dslabs)
+data(tissue_gene_expression)
+
+tis=as.data.frame(tissue_gene_expression$x) %>% mutate(y=tissue_gene_expression$y) %>%
+  rename(c279=`ZNF213-AS1`,c312=`NOP14-AS1`,c315=`ZSWIM8-AS1`,c329=`DDR1-DT`,c356=`HLA-E`,c386=`ERVH-6`,c438=`TRAV8-3`)
+
+set.seed(1, sample.kind = 'Rounding')
+i = createDataPartition(tis$y, times = 1, p = 0.5, list = FALSE)
+tr = tis[-i, ]
+t = tis[i, ]
+
+ks = seq(1, 11, 2)
+sapply(ks, function(k){
+  fit = knn3(y ~ ., data = tr, k = k)
+  y_hat = predict(fit, t, type ='class')
+  confusionMatrix(data = y_hat, reference = t$y)$overall['Accuracy']
+})
+
+##
+fit = knn3(y ~ ., data = tr, k = 1)
+y_hat = predict(fit, t, type ='class')
+confusionMatrix(data = y_hat, reference = t$y)$overall['Accuracy']
+
+
+
+
+
+r = data.frame(k=k,a=a)
+
+r %>% ggplot(aes(k, a)) + geom_point() + geom_line()
+#test
+ntr=tr[,c(1,2,501)]
+fit2 <- knn3(y ~ ., data = ntr, k = 1)
+fit = knn3(y ~ ., data = tr, k = 1)
+
+ntr=tr[,c(1:200,501)]
+fit2 <- knn3(y ~ ., data = ntr, k = 1)
+
+ntr=tr[,c(1:275,501)]
+fit2 <- knn3(y ~ ., data = ntr, k = 1)
+
+ntr=tr[,c(1:278,501)]
+fit2 <- knn3(y ~ ., data = ntr, k = 1)
+
+ntr=tr[,c(280:311, 501)]
+fit2 <- knn3(y ~ ., data = ntr, k = 1)
+
+ntr=tr[,c(313:314, 501)]
+fit2 <- knn3(y ~ ., data = ntr, k = 1)
+#
+ntr=tr[,c(316:328, 501)]
+fit2 <- knn3(y ~ ., data = ntr, k = 1)
+
+ntr=tr[,c(330:355, 501)]
+fit3 <- knn3(y ~ ., data = ntr, k = 1)
+
+ntr=tr[,c(357:385, 501)]
+fit4 <- knn3(y ~ ., data = ntr, k = 1)
+
+ntr=tr[,c(387:437,501)]
+fit5 <- knn3(y ~ ., data = ntr, k = 1)
+
+ntr=tr[,c(439:500,501)]
+fit6 <- knn3(y ~ ., data = ntr, k = 1)
+
+#error in here!
+#279, 312, 315, 329, 356, 386, 438 columns wrong!
+
+haha = tr[,c(279, 312, 315, 329, 356, 386, 438)]
+head(haha)
+
+ntr=tr%>%rename(c279=`ZNF213-AS1`,c312=`NOP14-AS1`,c315=`ZSWIM8-AS1`,c329=`DDR1-DT`,c356=`HLA-E`,c386=`ERVH-6`,c438=`TRAV8-3`)
+
+ha = ntr[,c(279, 312, 315, 329, 356, 386, 438)]
+head(ha)
+
+fit = knn3(y ~ ., data = tr, k = 1)
+
+# titanic
+library(titanic)    # loads titanic_train data frame
+library(caret)
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(rpart)
+options(digits = 3)
+titanic_clean <- titanic_train %>%
+    mutate(Survived = factor(Survived),
+           Embarked = factor(Embarked),
+           Age = ifelse(is.na(Age), median(Age, na.rm = TRUE), Age), # NA age to median age
+           FamilySize = SibSp + Parch + 1) %>%    # count family members
+    select(Survived,  Sex, Pclass, Age, Fare, SibSp, Parch, FamilySize, Embarked)
+#q1
+set.seed(42, sample.kind = "Rounding") # if using R 3.6 or later
+test_index <- createDataPartition(titanic_clean$Survived, times = 1, p = 0.2, list = FALSE) # create a 20% test set
+test_set <- titanic_clean[test_index,]
+train_set <- titanic_clean[-test_index,]
+#q2
+set.seed(3, sample.kind = 'Rounding')
+guess <- sample(c(0,1), nrow(test_set), replace = TRUE)
+mean(guess == test_set$Survived)
+#q3a
+train_set %>%
+    group_by(Sex) %>%
+    summarize(Survived = mean(Survived == 1)) %>%
+    filter(Sex == "female") %>%
+    pull(Survived)
+train_set %>%
+    group_by(Sex) %>%
+    summarize(Survived = mean(Survived == 1)) %>%
+    filter(Sex == "male") %>%
+    pull(Survived)
+# q3b
+sex_model <- ifelse(test_set$Sex == "female", 1, 0)    # predict Survived=1 if female, 0 if male
+mean(sex_model == test_set$Survived)
+#q4a
+train_set %>%
+    group_by(Pclass) %>%
+    summarize(Survived = mean(Survived == 1))
+#q4b
+class_model <- ifelse(test_set$Pclass == 1, 1, 0)    # predict survival only if first class
+mean(class_model == test_set$Survived) 
+#q4c
+train_set %>%
+    group_by(Sex, Pclass) %>%
+    summarize(Survived = mean(Survived == 1)) %>%
+    filter(Survived > 0.5)
+#q4d
+sex_class_model <- ifelse(test_set$Sex == "female" & test_set$Pclass != 3, 1, 0)
+mean(sex_class_model == test_set$Survived)
+#5a
+confusionMatrix(factor(sex_model), test_set$Survived)
+confusionMatrix(factor(class_model), test_set$Survived)
+confusionMatrix(factor(sex_class_model), test_set$Survived)
+#6
+F_meas(factor(sex_model), test_set$Survived)
+F_meas(factor(class_model), test_set$Survived)
+F_meas(factor(sex_class_model), test_set$Survived)
+#q7
+set.seed(1, sample.kind = "Rounding") # if using R 3.6 or later
+train_lda <- train(Survived ~ Fare, method = "lda", data = train_set)
+lda_preds <- predict(train_lda, test_set)
+mean(lda_preds == test_set$Survived)
+
+set.seed(1, sample.kind = "Rounding") # if using R 3.6 or later
+train_qda <- train(Survived ~ Fare, method = "qda", data = train_set)
+qda_preds <- predict(train_qda, test_set)
+mean(qda_preds == test_set$Survived)
+
+#q8
+set.seed(1, sample.kind = "Rounding") # if using R 3.6 or later
+train_glm_age <- train(Survived ~ Age, method = "glm", data = train_set)
+glm_preds_age <- predict(train_glm_age, test_set)
+mean(glm_preds_age == test_set$Survived)
+
+set.seed(1, sample.kind = "Rounding") # if using R 3.6 or later
+train_glm <- train(Survived ~ Sex + Pclass + Fare + Age, method = "glm", data = train_set)
+glm_preds <- predict(train_glm, test_set)
+mean(glm_preds == test_set$Survived)
+
+set.seed(1, sample.kind = "Rounding") if using R 3.6 or later
+train_glm_all <- train(Survived ~ ., method = "glm", data = train_set)
+glm_all_preds <- predict(train_glm_all, test_set)
+mean(glm_all_preds == test_set$Survived)
+
+#q9a
+set.seed(6, sample.kind = "Rounding") # if using R 3.6 or later
+train_knn <- train(Survived ~ .,
+                   method = "knn",
+                   data = train_set,
+                   tuneGrid = data.frame(k = seq(3, 51, 2)))
+train_knn$bestTune
+#q9b
+ggplot(train_knn)
+#q9c
+knn_preds <- predict(train_knn, test_set)
+mean(knn_preds == test_set$Survived)
+#q10
+set.seed(8, sample.kind = "Rounding") # if using R 3.6 or later
+train_knn_cv <- train(Survived ~ .,
+                   method = "knn",
+                   data = train_set,
+                   tuneGrid = data.frame(k = seq(3, 51, 2)),
+                   trControl = trainControl(method = 'cv', number = 10, p = 0.9))
+train_knn_cv$bestTune
+knn_cv_preds <- predict(train_knn_cv, test_set)
+mean(knn_cv_preds == test_set$Survived)
+#q11
+set.seed(10, sample.kind = "Rounding")    # simulate R 3.5
+train_rpart <- train(Survived ~ ., 
+                     method = "rpart",
+                     tuneGrid = data.frame(cp = seq(0, 0.05, 0.002)),
+                     data = train_set)
+train_rpart$bestTune
+rpart_preds <- predict(train_rpart, test_set)
+mean(rpart_preds == test_set$Survived)
+#12
+plot(train_rpart$finalModel, margin = 0.1)
+text(train_rpart$finalModel)
+
+#13
+set.seed(14, sample.kind = "Rounding") # if using R 3.6 or later
+train_knn <- train(Survived ~ .,
+                   method = "rf",
+                   data = train_set,
+                   tuneGrid = data.frame(mtry = seq(1:7)), ntree=100)
+train_knn$bestTune
+#q9b
+
+#Machine learning 4.2: Cross-validation
+library(tidyverse)
+library(caret)
+set.seed(1996, sample.kind="Rounding") #if you are using R 3.6 or later
+n <- 1000
+p <- 10000
+x <- matrix(rnorm(n*p), n, p)
+colnames(x) <- paste("x", 1:ncol(x), sep = "_")
+y <- rbinom(n, 1, 0.5) %>% factor()
+x_subset <- x[ ,sample(p, 100)]
+#q1
+fit <- train(x_subset, y, method = "glm")
+#q2 using school R
+library(genefilter)
+tt <- colttests(x, y)
+pvals <- tt$p.value
+#q3
+ind <- which(pvals <= 0.01)
+#q4
+x_subset <- x[,ind]
+fit <- train(x_subset, y, method = "glm")
+fit$results
+#q5
+fit <- train(x_subset, y, method = "knn", tuneGrid = data.frame(k = seq(101, 301, 25)))
+ggplot(fit)
+#q7
+data(tissue_gene_expression)
+fit <- with(tissue_gene_expression, train(x, y, method = "knn", tuneGrid = data.frame(k = seq(1, 7, 2))))
+ggplot(fit)
+
+#
+x=c(72,63,50,49,46,44,41,40,36,33)
+y=c(112,98,107,83,66,72,59,68,51,56)
+fit=lm(y~x)
+
+#
+n <- 10^6
+income <- 10^(rnorm(n, log10(45000), log10(3)))
+qplot(log10(income), bins = 30, color = I("black"))
+
+m <- median(income)
+m
+
+set.seed(1, sample.kind="Rounding")
+N <- 250
+X <- sample(income, N)
+M<- median(X)
+M
+
+B <- 1000
+M <- replicate(B, {
+    X <- sample(income, N)
+    median(X)
+})
+p1 <- qplot(M, bins = 30, color = I("black"))
+
+#Machine learning 4.2: Bootstrap
+library(dslabs)
+library(caret)
+data(mnist_27)
+# set.seed(1995) # if R 3.5 or earlier
+set.seed(1995, sample.kind="Rounding") # if R 3.6 or later
+indexes <- createResample(mnist_27$train$y, 10)
+#q1
+sum(indexes[[1]] == 3)
+sum(indexes[[1]] == 4)
+sum(indexes[[1]] == 7)
+#q2
+sum(sapply(1:10, function(a){sum(indexes[[a]] == 3)}))
+#or
+x=sapply(indexes, function(ind){
+	sum(ind == 3)
+})
+sum(x)
+#q3
+set.seed(1, sample.kind="Rounding") # if R 3.6 or later
+B = 10000
+q_75 = replicate(B, {
+  y <- rnorm(100, 0, 1)
+  quantile(y, 0.75)
+})
+mean(q_75)
+sd(q_75)
+#q4
+set.seed(1, sample.kind = "Rounding") # if R 3.6 or later
+y <- rnorm(100, 0, 1)
+set.seed(1, sample.kind = "Rounding") # if R 3.6 or later
+indexes = createResample(y, 10)
+q_75_star = sapply(indexes, function(i){
+  y_star = y[i]
+  quantile(y_star, 0.75)
+})
+mean(q_75_star)
+sd(q_75_star)
+#q5
+set.seed(1, sample.kind = "Rounding") # if R 3.6 or later
+y <- rnorm(100, 0, 1)
+set.seed(1, sample.kind = "Rounding") # if R 3.6 or later
+indexes = createResample(y, 10000)
+q_75_star = sapply(indexes, function(i){
+  y_star = y[i]
+  quantile(y_star, 0.75)
+})
+mean(q_75_star)
+sd(q_75_star)
