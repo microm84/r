@@ -6476,3 +6476,224 @@ q_75_star = sapply(indexes, function(i){
 })
 mean(q_75_star)
 sd(q_75_star)
+
+#school homework
+install.packages(c('dplyr', 'vtable', 'Hmisc', 'ggplot2'))
+#1 In school R, getwd(), "H:/Documents", transfer fundamentals.csv and market.csv to there.
+fundamentals = read.csv('fundamentals.csv', header = TRUE, sep = ',')
+market = read.csv('market.csv', header = TRUE, sep = ',')
+library(dplyr)
+merged = inner_join(fundamentals, market, by =c('FirmID', 'Year'))
+# check 156,823 observations and 19 variables.
+str(merged)
+ 
+#2
+merged2 = merged %>% mutate(CashRatio = Cash / Assets, DARatio = LTDebt / Assets,
+ ROA = EBITDA / Assets, DivPayer = ifelse(Dividends > 0, 1, 0),
+ LnAssets = log(Assets * 10^6), LnAge = log(Age))
+# check the value of the above variables for the firm with FirmID 4115 in Year 2005.
+merged2 %>% filter(FirmID == 4115 & Year == 2005) %>% select(CashRatio, DARatio,
+ DivPayer, LnAssets, LnAge, ROA)
+ 
+#3 We need school R
+library(vtable)
+merged3 = merged2 %>% select(Age, Assets, Cash, EBITDA, Equity, Liabilities,
+ LTDebt, MarketCap, NetIncome, Return, Revenue, CashRatio, DARatio,
+ DivPayer, ROA)
+st(merged3, add.median = TRUE)
+ 
+Another method without using library(vtable)
+matrix1 = merged2 %>% select(Age, Assets, Cash, EBITDA, Equity, Liabilities,
+ LTDebt, MarketCap, NetIncome, Return, Revenue, CashRatio, DARatio,
+ DivPayer, ROA) %>% summarize_all(list(~ n(), ~ mean(.), ~ sd(.))) %>%
+ round(2) %>% matrix(15, 3)
+matrix2 = merged2 %>% select(Age, Assets, Cash, EBITDA, Equity, Liabilities,
+ LTDebt, MarketCap, NetIncome, Return, Revenue, CashRatio, DARatio,
+ DivPayer, ROA) %>% summarize_all(quantile) %>% round(2) %>%
+ as.matrix() %>% t()
+summary = cbind(matrix1, matrix2)
+colnames(summary) = c('N', 'Mean', 'Sd', 'Min', 'Pctl.25', 'Median', 'Pctl.75', 'Max')
+summary
+ 
+#4
+merged4 = merged2 %>% select(Age, MarketCap, Return, CashRatio, DARatio, ROA)
+library(Hmisc)
+corr = rcorr(as.matrix(merged4))
+r = corr$r %>% round(2) %>% c()
+P = corr$P %>% round(4) %>% c()
+sig = P %>% symnum(cutpoints = c(0, 0.01, 0.05, 0.1, 1), symbols = c("***", "**", "*", " "), na = 'NA')
+value = sapply(1:36, function(i){
+    paste(r[i], '(', P[i], ')', sig[i])
+}) %>% matrix(6,6) %>% as.data.frame()
+colnames(value) = c('Age', 'MarketCap', 'Return', 'CashRatio', 'DARatio', 'ROA')
+rownames(value) = c('Age', 'MarketCap', 'Return', 'CashRatio', 'DARatio', 'ROA')
+value
+ 
+#5
+# merged2 %>% group_by(DivPayer) %>% summarize(m = mean(CashRatio))
+# Use summarise in School R: merged2 %>% group_by(DivPayer) %>% summarise(m = mean(CashRatio))
+divPayer0 = merged2 %>% filter(DivPayer == 0)
+divPayer1 = merged2 %>% filter(DivPayer == 1)
+mean(divPayer0$CashRatio) - mean(divPayer1$CashRatio)
+t.test(divPayer0$CashRatio, divPayer1$CashRatio, var.equal = FALSE)
+ 
+#6
+equallyWeightedAverageCashRatio = merged2 %>% group_by(Year) %>% summarise(averageCashRatio = mean(CashRatio)) %>%
+ mutate(Type = 'Equally weighted average')
+valueWeightedAverageCashRatio = merged2 %>% group_by(Year) %>% summarise(averageCashRatio = sum(MarketCap * CashRatio) / sum(MarketCap)) %>%
+ mutate(Type = 'Value weighted average')
+averageCashRatio = full_join(equallyWeightedAverageCashRatio, valueWeightedAverageCashRatio)
+library(ggplt2)
+averageCashRatio %>% ggplot(aes(Year, averageCashRatio, linetype = Type)) + geom_line() +
+ scale_x_continuous(n.breaks = 14, limits = c(1950, 2019)) + scale_y_continuous(limits = c(0, 0.3)) +
+ labs(y = 'Average cash ratio') + ggtitle('Average cash ratio by year') + theme_classic()
+ 
+#7
+merged7 = merged2 %>% arrange(FirmID, Year) %>% group_by(FirmID) %>%
+ mutate(LagReturn = ifelse((Year - 1) %in% Year, lag(Return, 1), NA)) %>%
+ ungroup()
+# check
+merged7 %>% filter(FirmID == 5540 & Year == 2002) %>% select(FirmID, Year, LagReturn)
+sum(is.na(merged7$LagReturn))
+ 
+#8
+merged7 %>% lm(CashRatio ~ LnAssets, data = .) %>% summary()
+merged7 %>% lm(CashRatio ~ LnAssets + LnAge + DARatio + DivPayer + LagReturn, data = .) %>% summary()
+merged7 %>% lm(CashRatio ~ LnAssets + LnAge + DARatio + DivPayer + LagReturn + factor(SICIndustry), data = .) %>% summary()
+merged7 %>% lm(CashRatio ~ LnAssets + LnAge + DARatio + DivPayer + LagReturn + factor(Year), data = .) %>% summary()
+merged7 %>% lm(CashRatio ~ LnAssets + LnAge + DARatio + DivPayer +
+ LagReturn + factor(SICIndustry) + factor(Year), data = .) %>% summary()
+
+
+
+
+
+
+
+
+#length(unique(merged7$SICIndustry))
+
+#test
+a = data.frame(Asset = c(100, 200), Cash = c(200, 300), Loan = c(150, 200))
+a %>% select(Asset, Cash) %>% summarize_all(Mean = mean(), Sd = sd())
+a %>% as_tibble() %>% summarize_all(mean(), sd())
+
+
+a = data.frame(Asset = c(100, 200), Cash = c(200, 300), Loan = c(150, 200))
+a %>% summarize_all(funs(mean))
+a %>% summarize_all(c(mean,sd))
+
+#1
+fundamentals = read.csv('fundamentals.csv', header = TRUE, sep = ',')
+market = read.csv('market.csv', header = TRUE, sep = ',')
+library(dplyr)
+merged = inner_join(fundamentals, market, by =c('FirmID', 'Year'))
+#2
+merged2 = merged %>% mutate(CashRatio = Cash / Assets, DARatio = LTDebt / Assets,
+  ROA = EBITDA / Assets, DivPayer = ifelse(Dividends > 0, 1, 0),
+  LnAssets = log(Assets * 10^6), LnAge = log(Age))
+#3 We need school R
+#library(vtable)
+m3 = merged2 %>% select(Age, Assets, Cash, EBITDA, Equity, Liabilities,
+  LTDebt, MarketCap, NetIncome, Return, Revenue, CashRatio, DARatio,
+  DivPayer, ROA) %>% summarize_all(c(function(.){n()}, mean, sd, min, median, max)) %>% matrix(15,6)
+colnames(m3) = c('N', 'Mean', 'Sd', 'Min', 'Median', 'Max')
+rownames(m3) = c('Age', 'Assets', 'Cash', 'EBITDA', 'Equity', 'Liabilities',
+  'LTDebt', 'MarketCap', 'NetIncome', 'Return', 'Revenue', 'CashRatio', 'DARatio',
+   'DivPayer', 'ROA')
+
+m2 = matrix(1:75, 15, 5)
+m2[1,1] = NA
+m2 %>% as.data.frame() %>% summarize_all(c(function(.){sum(!is.na(.))}, mean))
+
+#test can delete later
+a=1:1000
+a2=1001:2000
+d = data.frame(a, a2)
+r = d %>% summarize_all(quantile) %>% as.matrix() %>% t()
+
+
+
+
+
+mt = merged2 %>% select(Age, Assets, Cash, EBITDA, Equity, Liabilities,
+  LTDebt, MarketCap, NetIncome, Return, Revenue, CashRatio, DARatio,
+  DivPayer, ROA) %>% summarize_all(~n())
+
+m3 = merged2 %>% select(Age, Assets, Cash, EBITDA, Equity, Liabilities,
+  LTDebt, MarketCap, NetIncome, Return, Revenue, CashRatio, DARatio,
+  DivPayer, ROA) %>% summarize_all(c(function(.){n()}, mean, sd, 
+  function(.){quantile(., 0)}, function(.){quantile(., 0.25)}, 
+  function(.){quantile(., 0.5)}, function(.){quantile(., 0.75)}, 
+  function(.){quantile(., 1)})) %>% round(2) %>% matrix(15, 8)
+colnames(m3) = c('N', 'Mean', 'Sd', 'Min', 'Pctl.25', 'Median', 'Pctl.75', 'Max')
+rownames(m3) = c('Age', 'Assets', 'Cash', 'EBITDA', 'Equity', 'Liabilities',
+  'LTDebt', 'MarketCap', 'NetIncome', 'Return', 'Revenue', 'CashRatio', 'DARatio',
+  'DivPayer', 'ROA')
+m3
+
+
+
+
+
+
+
+
+
+
+
+b=quantile(a)
+matrix(b)
+> str(b)
+ Named num [1:5] 1 251 500 750 1000
+ - attr(*, "names")= chr [1:5] "0%" "25%" "50%" "75%" ...
+> a%>%summarize(quantile)
+Error in UseMethod("summarise") : 
+  no applicable method for 'summarise' applied to an object of class "c('integer', 'numeric')"
+> a=data.frame(a)
+
+> 
+> a%>%summarize(quantile)
+Error in `summarize()`:
+! Problem while computing `..1 = quantile`.
+✖ `..1` must be a vector, not a function.
+Run `rlang::last_error()` to see where the error occurred.
+> library(dplyr)
+> a%>%summarize(quantile)
+Error in `summarize()`:
+! Problem while computing `..1 = quantile`.
+✖ `..1` must be a vector, not a function.
+Run `rlang::last_error()` to see where the error occurred.
+> a%>%summarize_all(quantile)
+        a
+1    1.00
+2  250.75
+3  500.50
+4  750.25
+5 1000.00
+> b=a%>%summarize_all(quantile)
+> str(b)
+'data.frame':	5 obs. of  1 variable:
+ $ a: Named num  1 251 500 750 1000
+  ..- attr(*, "names")= chr [1:5] "0%" "25%" "50%" "75%" ...
+> c(b)
+$a
+     0%     25%     50%     75%    100% 
+   1.00  250.75  500.50  750.25 1000.00 
+
+> b1=c(b)
+> str(b1)
+List of 1
+ $ a: Named num [1:5] 1 251 500 750 1000
+  ..- attr(*, "names")= chr [1:5] "0%" "25%" "50%" "75%" ...
+> b1
+$a
+     0%     25%     50%     75%    100% 
+   1.00  250.75  500.50  750.25 1000.00 
+
+> class(b1)
+[1] "list"
+> 
+
+#
+#
