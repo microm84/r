@@ -6752,3 +6752,341 @@ x <- x[, sample(ncol(x), 10)]
 
 fit_lda <- train(x, y, method = "lda", preProcess = "center")
 fit_lda$results["Accuracy"]
+
+# machine learning 6.1.
+# 6.1.1. Case study: MNIST
+library(dslabs)
+mnist <- read_mnist()
+
+names(mnist)
+dim(mnist$train$images)
+# [1] 60000   784
+class(mnist$train$images)
+# [1] "matrix" "array"
+
+length(mnist$train$labels)
+# [1] 60000
+class(mnist$train$labels)
+# [1] "integer"
+table(mnist$train$labels)
+
+dim(mnist$test$images)
+# [1] 10000   784
+
+# sample 10k rows from training set, 1k rows from test set
+set.seed(123)
+index <- sample(nrow(mnist$train$images), 10000)
+x <- mnist$train$images[index,]
+y <- factor(mnist$train$labels[index])
+dim(x)
+# [1] 10000   784
+length(y)
+# [1] 10000
+
+index <- sample(nrow(mnist$test$images), 1000)
+#note that the line above is the corrected code - code in video at 0:52 is incorrect
+x_test <- mnist$test$images[index,]
+y_test <- factor(mnist$test$labels[index])
+dim(x_test)
+# [1] 1000   784
+length(y_test)
+# [1] 1000
+
+# 6.1.2. Preprocessing MNIST Data
+library(matrixStats)
+sds <- colSds(x)
+qplot(sds, bins = 256, color = I("black"))
+
+library(caret)
+nzv <- nearZeroVar(x)
+length(nzv)
+# [1] 535
+image(matrix(1:784 %in% nzv, 28, 28))
+
+col_index <- setdiff(1:ncol(x), nzv)
+length(col_index)
+# [1] 249 
+# 784 - 535 = 249
+
+# 6.1.3. Model Fitting for MNIST Data
+colnames(x) <- 1:ncol(mnist$train$images)
+colnames(x_test) <- colnames(x)
+# x, x_test, and mnist$train$images have same number of columns (784).
+
+n <- 1000
+b <- 2
+index <- sample(nrow(x), n)
+control <- trainControl(method = "cv", number = b, p = .9)
+train_knn <- train(x[index ,col_index], y[index],
+                   method = "knn",
+                   tuneGrid = data.frame(k = c(3,5,7)),
+                   trControl = control)
+fit_knn <- knn3(x[ ,col_index], y,  k = 3)
+
+y_hat_knn <- predict(fit_knn,
+                     x_test[, col_index],
+                     type="class")
+cm <- confusionMatrix(y_hat_knn, factor(y_test))
+cm$overall["Accuracy"]
+
+library(Rborist)
+control <- trainControl(method="cv", number = 5, p = 0.8)
+grid <- expand.grid(minNode = c(1,5) , predFixed = c(10, 15, 25, 35, 50))
+train_rf <-  train(x[, col_index], y,
+                   method = "Rborist",
+                   nTree = 50,
+                   trControl = control,
+                   tuneGrid = grid,
+                   nSamp = 5000)
+ggplot(train_rf)
+train_rf$bestTune
+
+fit_rf <- Rborist(x[, col_index], y,
+                  nTree = 1000,
+                  minNode = train_rf$bestTune$minNode,
+                  predFixed = train_rf$bestTune$predFixed)
+
+y_hat_rf <- factor(levels(y)[predict(fit_rf, x_test[ ,col_index])$yPred])
+cm <- confusionMatrix(y_hat_rf, y_test)
+cm$overall["Accuracy"]
+
+# 6.1.4. Variable Importance
+library(randomForest)
+# We need school R.
+x <- mnist$train$images[index,]
+y <- factor(mnist$train$labels[index])
+rf <- randomForest(x, y,  ntree = 50)
+imp <- importance(rf)
+imp
+
+image(matrix(imp, 28, 28))
+
+# 6.1.5. Ensembles
+p_rf <- predict(fit_rf, x_test[,col_index])$census
+p_rf <- p_rf / rowSums(p_rf)
+p_knn <- predict(fit_knn, x_test[,col_index])
+p <- (p_rf + p_knn)/2
+y_pred <- factor(apply(p, 1, which.max)-1)
+confusionMatrix(y_pred, y_test)
+
+# 6.1.6. Comprehension check
+# q1
+models <- c("glm", "lda", "naive_bayes", "svmLinear", "knn", 
+  "gamLoess", "multinom", "qda", "rf", "adaboost")
+library(caret)
+library(dslabs)
+library(dplyr)
+# set.seed(1) # if using R 3.5 or earlier
+set.seed(1, sample.kind = "Rounding") # if using R 3.6 or later
+data("mnist_27")
+
+fits <- lapply(models, function(model){ 
+	print(model)
+	train(y ~ ., method = model, data = mnist_27$train)
+}) 
+    
+names(fits) <- models
+
+# q2
+# method 1
+length(mnist_27$test$y)
+length(models)
+#
+
+pred <- sapply(fits, function(object) 
+    predict(object, newdata = mnist_27$test))
+dim(pred)
+
+# q3
+# method 1
+a = sapply(1:10, function(i){
+    confusionMatrix(factor(pred[,i]), mnist_27$test$y)$overall['Accuracy']
+})
+mean(a)
+#
+
+# q4
+# method 1
+a = sapply(1:200, function(i){
+    ifelse(mean(pred[i,] == 7) > 0.5, 7, 2)
+})
+confusionMatrix(factor(a), mnist_27$test$y)$overall['Accuracy']
+#
+
+# q2-7
+#2
+pred <- sapply(fits, function(object) 
+    predict(object, newdata = mnist_27$test))
+dim(pred)
+#3
+acc <- colMeans(pred == mnist_27$test$y)
+acc
+mean(acc)
+#4
+votes <- rowMeans(pred == "7")
+y_hat <- ifelse(votes > 0.5, "7", "2")
+mean(y_hat == mnist_27$test$y)
+#5
+ind <- acc > mean(y_hat == mnist_27$test$y)
+sum(ind)
+models[ind]
+# q6
+acc_hat <- sapply(fits, function(fit) min(fit$results$Accuracy))
+mean(acc_hat)
+
+# q7
+# method 1
+pred <- sapply(fits, function(object) 
+    predict(object, newdata = mnist_27$test))
+pred2 = pred[,c(1,3,5,6,8,9)]
+a = sapply(1:200, function(i){
+    ifelse(mean(pred2[i,] == 7) >= 0.5, 7, 2)
+})
+confusionMatrix(factor(a), mnist_27$test$y)$overall['Accuracy']
+#
+
+ind <- acc_hat >= 0.8
+votes <- rowMeans(pred[,ind] == "7")
+y_hat <- ifelse(votes>=0.5, 7, 2)
+mean(y_hat == mnist_27$test$y)
+
+# machine learning 6.2: Recommendation Systems
+# 6.2.1. Recommendation Systems
+library(dslabs)
+library(dplyr)
+library(knitr)
+library(tidyr)
+library(ggplot2)
+data("movielens")
+
+head(movielens)
+
+movielens %>%
+     summarize(n_users = n_distinct(userId),
+               n_movies = n_distinct(movieId))
+
+keep <- movielens %>%
+     dplyr::count(movieId) %>%
+     top_n(5) %>%
+     pull(movieId)
+
+tab <- movielens %>%
+     filter(userId %in% c(13:20)) %>% 
+     filter(movieId %in% keep) %>% 
+     select(userId, title, rating) %>% 
+     pivot_wider(names_from = title, values_from = rating)
+tab %>% knitr::kable()
+
+users <- sample(unique(movielens$userId), 100)
+movielens %>% filter(userId %in% users) %>% 
+     select(userId, movieId, rating) %>%
+     mutate(rating = 1) %>%
+     spread(movieId, rating) %>% select(sample(ncol(.), 100)) %>% 
+     as.matrix() %>% t(.) %>%
+     image(1:100, 1:100,. , xlab="Movies", ylab="Users")
+abline(h=0:100+0.5, v=0:100+0.5, col = "grey")
+
+movielens %>% 
+     dplyr::count(movieId) %>% 
+     ggplot(aes(n)) + 
+     geom_histogram(bins = 30, color = "black") + 
+     scale_x_log10() + 
+     ggtitle("Movies")
+
+movielens %>%
+     dplyr::count(userId) %>% 
+     ggplot(aes(n)) + 
+     geom_histogram(bins = 30, color = "black") + 
+     scale_x_log10() +
+     ggtitle("Users")
+
+
+library(caret)
+set.seed(755)
+test_index <- createDataPartition(y = movielens$rating, times = 1,
+                                  p = 0.2, list = FALSE)
+train_set <- movielens[-test_index,]
+test_set <- movielens[test_index,]
+
+dim(train_set)
+# 80,002 * 7
+dim(test_set)
+# 20,002 * 7
+
+test_set <- test_set %>% 
+     semi_join(train_set, by = "movieId") %>%
+     semi_join(train_set, by = "userId")
+# 19,207 * 7
+# 19,207 * 7
+
+RMSE <- function(true_ratings, predicted_ratings){
+     sqrt(mean((true_ratings - predicted_ratings)^2))
+}
+
+# 6.2.2. 
+library(dslabs)
+library(dplyr)
+library(knitr)
+library(tidyr)
+library(ggplot2)
+library(caret)
+
+data("movielens")
+set.seed(755)
+test_index <- createDataPartition(y = movielens$rating, times = 1,
+                                  p = 0.2, list = FALSE)
+train_set <- movielens[-test_index,]
+test_set <- movielens[test_index,]
+
+#dim(train_set) 80,002 * 7
+#dim(test_set) 20,002 * 7
+
+test_set <- test_set %>% 
+     semi_join(train_set, by = "movieId") %>%
+     semi_join(train_set, by = "userId")
+# 19,207 * 7
+
+RMSE <- function(true_ratings, predicted_ratings){
+     sqrt(mean((true_ratings - predicted_ratings)^2))
+}
+
+# simple model
+mu_hat <- mean(train_set$rating)
+mu_hat
+
+naive_rmse <- RMSE(test_set$rating, mu_hat)
+naive_rmse
+
+rmse_results <- tibble(method = "Just the average", RMSE = naive_rmse)
+
+# modeling movie effects
+mu <- mean(train_set$rating) 
+movie_avgs <- train_set %>% 
+  group_by(movieId) %>% 
+  summarize(b_i = mean(rating - mu))
+
+predicted_ratings <- mu + test_set %>% 
+  left_join(movie_avgs, by='movieId') %>%
+  pull(b_i)
+RMSE(predicted_ratings, test_set$rating)
+
+# method 2
+predicted_ratings <- test_set %>% 
+  left_join(movie_avgs, by='movieId') %>% 
+  mutate(pred = mu + b_i) %>%
+  pull(pred)
+RMSE(predicted_ratings, test_set$rating)
+
+# modeling user effects
+user_avgs <- train_set %>% 
+  left_join(movie_avgs, by='movieId') %>%
+  group_by(userId) %>%
+  summarize(b_u = mean(rating - mu - b_i))
+
+predicted_ratings <- test_set %>% 
+  left_join(movie_avgs, by='movieId') %>%
+  left_join(user_avgs, by='userId') %>%
+  mutate(pred = mu + b_i + b_u) %>%
+  pull(pred)
+RMSE(predicted_ratings, test_set$rating)
+#> [1] 0.905
