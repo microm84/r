@@ -7090,3 +7090,75 @@ predicted_ratings <- test_set %>%
   pull(pred)
 RMSE(predicted_ratings, test_set$rating)
 #> [1] 0.905
+
+# 6.2.3. Comprehension check
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(dslabs)
+data("movielens")
+
+# q1
+# method 1
+t1 = movielens %>% 
+  group_by(movieId) %>% 
+  summarize(year = unique(year), n = n()) %>%
+  ungroup() %>%
+  group_by(year) %>%
+  summarize(m = median(n)) %>%
+  arrange(by = desc(m))
+
+movielens %>% group_by(movieId) %>%
+	summarize(n = n(), year = as.character(first(year))) %>%
+	qplot(year, n, data = ., geom = "boxplot") +
+	coord_trans(y = "sqrt") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# q2
+t2 = movielens %>% 
+  filter(year >= 1993) %>%
+  group_by(movieId) %>%
+  summarize(title = unique(title), mnr = n() / (2018 - unique(year)), mr = mean(rating)) %>%
+  arrange(by=desc(mnr))
+
+# q3
+movielens %>% 
+	filter(year >= 1993) %>%
+	group_by(movieId) %>%
+	summarize(n = n(), years = 2018 - first(year),
+				title = title[1],
+				rating = mean(rating)) %>%
+	mutate(rate = n/years) %>%
+	top_n(25, rate) %>%
+	arrange(desc(rate)) %>%
+  ggplot(aes(rating, rate)) + geom_point() + geom_smooth()
+
+# q6
+a = movielens %>% 
+  mutate(date = as_datetime(timestamp)) %>%
+  mutate(rd = round_date(date, 'week')) %>%
+  group_by(rd) %>%
+  summarize(mr = mean(rating)) %>%
+  ggplot(aes(rd, mr)) + geom_point() + geom_smooth()
+
+
+x <- ymd_hms("2022-04-05 12:01:59.23")
+round_date(x, "week")
+
+# q8
+# method 1
+a = movielens %>% 
+  mutate(g = as.character(genres)) %>%
+  group_by(g) %>%
+  filter(n() > 1000) %>%
+  summarize(m=mean(rating)) %>%
+  arrange(by=m)
+
+movielens %>% group_by(genres) %>%
+	summarize(n = n(), avg = mean(rating), se = sd(rating)/sqrt(n())) %>%
+	filter(n >= 1000) %>% 
+	mutate(genres = reorder(genres, avg)) %>%
+	ggplot(aes(x = genres, y = avg, ymin = avg - 2*se, ymax = avg + 2*se)) + 
+	geom_point() +
+	geom_errorbar() + 
+	theme(axis.text.x = element_text(angle = 90, hjust = 1))
