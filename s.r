@@ -7162,3 +7162,96 @@ movielens %>% group_by(genres) %>%
 	geom_point() +
 	geom_errorbar() + 
 	theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# 6.3.2. Comprehension check: Regularization
+library(dplyr)
+library(ggplot2)
+
+options(digits=7)
+
+set.seed(1986, sample.kind="Rounding") # if using R 3.6 or later
+n <- round(2^rnorm(1000, 8, 1))
+
+set.seed(1, sample.kind="Rounding") # if using R 3.6 or later
+mu <- round(80 + 2*rt(1000, 5))
+range(mu)
+schools <- data.frame(id = paste("PS",1:1000),
+                      size = n,
+                      quality = mu,
+                      rank = rank(-mu))
+
+schools %>% top_n(10, quality) %>% arrange(desc(quality))
+
+set.seed(1, sample.kind="Rounding") # if using R 3.6 or later
+mu <- round(80 + 2*rt(1000, 5))
+
+scores <- sapply(1:nrow(schools), function(i){
+       scores <- rnorm(schools$size[i], schools$quality[i], 30)
+       scores
+})
+schools <- schools %>% mutate(score = sapply(scores, mean))
+
+# q1
+q1 = schools %>% select(id, size, score) %>% arrange(by=desc(score)) %>% head(n=10)
+
+# q2
+schools %>% summarize(median(size))
+a %>% summarize(median(size))
+
+# q3
+b = schools %>% select(id, size, score) %>% arrange(by=score) %>% head(n=10) %>% 
+  summarize(median(size))
+
+# q4
+schools %>% ggplot(aes(size, score)) + geom_point() + geom_smooth()
+
+schools %>% ggplot(aes(size, score)) +
+	geom_point(alpha = 0.5) +
+	geom_point(data = filter(schools, rank<=10), col = 2)
+
+# q5
+overall <- mean(sapply(scores, mean))
+
+rs = sapply(scores, function(i){
+  1/(25+length(i)) * sum(i-overall)
+})
+q5 = schools %>% mutate(rs = rs + overall) %>% 
+  select(id, size, rs) %>% arrange(by=desc(rs)) %>% head(n=10)
+
+# q6
+q6 = sapply(10:250, function(alpha){
+  rs = sapply(scores, function(i){
+    overall + 1/(alpha+length(i)) * sum(i-overall)
+  })
+  sqrt(1/1000*sum((schools$quality-rs)^2))
+})
+data.frame(alpha = 10:250, q6 = q6) %>% filter(q6 == min(q6))
+
+alphas <- seq(10,250)
+rmse <- sapply(alphas, function(alpha){
+	score_reg <- sapply(scores, function(x) overall+sum(x-overall)/(length(x)+alpha))
+	sqrt(mean((score_reg - schools$quality)^2))
+})
+plot(alphas, rmse)
+alphas[which.min(rmse)]
+
+# q7
+rs = sapply(scores, function(i){
+  overall + 1/(135+length(i)) * sum(i-overall)
+})
+q7 = schools %>% mutate(rs = rs) %>% 
+  select(id, size, rs) %>% arrange(by=desc(rs)) %>% head(n=10)
+
+score_reg <- sapply(scores, function(x)
+	overall+sum(x-overall)/(length(x)+135))
+schools %>% mutate(score_reg = score_reg) %>%
+	top_n(10, score_reg) %>% arrange(desc(score_reg))
+
+# q8
+q8 = sapply(10:250, function(alpha){
+  rs = sapply(scores, function(i){
+    overall + 1/(alpha+length(i)) * sum(i)
+  })
+  sqrt(1/1000*sum((schools$quality-rs)^2))
+})
+data.frame(alpha = 10:250, q8 = q8) %>% filter(q8 == min(q8))
