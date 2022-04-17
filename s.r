@@ -7246,3 +7246,48 @@ q8 = sapply(alphas, function(alpha){
     rmse = sqrt(1/1000*sum((schools$quality - (b))^2))
 })
 alphas[which.min(q8)]
+
+# 6.3.3. Matrix factorization
+library(dplyr)
+library(ggplot2)
+library(dslabs)
+library(tidyr)
+
+data("movielens")
+
+train_small <- movielens %>% 
+     group_by(movieId) %>%
+     filter(n() >= 50 | movieId == 3252) %>% ungroup() %>% #3252 is Scent of a Woman used in example
+     group_by(userId) %>%
+     filter(n() >= 50) %>% ungroup()
+
+# train_small
+# A tibble: 34,069 × 7
+
+y <- train_small %>% 
+  select(userId, movieId, rating) %>%
+  pivot_wider(names_from = "movieId", values_from = "rating") %>%
+  as.matrix()
+# dim(y)
+# 292 455
+
+# n_distinct(train_small$movieId)
+# 454
+# n_distinct(train_small$userId)
+# 292
+
+rownames(y)<- y[,1]
+y <- y[,-1]
+# dim(y)
+# 292 454
+
+movie_titles <- movielens %>% 
+  select(movieId, title) %>%
+  distinct()
+
+colnames(y) <- with(movie_titles, title[match(colnames(y), movieId)])
+
+y <- sweep(y, 2, colMeans(y, na.rm=TRUE))
+y <- sweep(y, 1, rowMeans(y, na.rm=TRUE))
+
+# 
