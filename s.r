@@ -6477,93 +6477,6 @@ q_75_star = sapply(indexes, function(i){
 mean(q_75_star)
 sd(q_75_star)
 
-#school homework
-install.packages(c('dplyr', 'vtable', 'Hmisc', 'ggplot2'))
-#1 In school R, getwd(), "H:/Documents", transfer fundamentals.csv and market.csv to there.
-fundamentals = read.csv('fundamentals.csv', header = TRUE, sep = ',')
-market = read.csv('market.csv', header = TRUE, sep = ',')
-library(dplyr)
-merged = inner_join(fundamentals, market, by =c('FirmID', 'Year'))
-# check 156,823 observations and 19 variables.
-str(merged)
- 
-#2
-merged2 = merged %>% mutate(CashRatio = Cash / Assets, DARatio = LTDebt / Assets,
- ROA = EBITDA / Assets, DivPayer = ifelse(Dividends > 0, 1, 0),
- LnAssets = log(Assets * 10^6), LnAge = log(Age))
-# check the value of the above variables for the firm with FirmID 4115 in Year 2005.
-merged2 %>% filter(FirmID == 4115 & Year == 2005) %>% select(CashRatio, DARatio,
- DivPayer, LnAssets, LnAge, ROA)
- 
-#3 We need school R
-library(vtable)
-merged3 = merged2 %>% select(Age, Assets, Cash, EBITDA, Equity, Liabilities,
- LTDebt, MarketCap, NetIncome, Return, Revenue, CashRatio, DARatio,
- DivPayer, ROA)
-st(merged3, add.median = TRUE)
- 
-Another method without using library(vtable)
-matrix1 = merged2 %>% select(Age, Assets, Cash, EBITDA, Equity, Liabilities,
- LTDebt, MarketCap, NetIncome, Return, Revenue, CashRatio, DARatio,
- DivPayer, ROA) %>% summarize_all(list(~ n(), ~ mean(.), ~ sd(.))) %>%
- round(2) %>% matrix(15, 3)
-matrix2 = merged2 %>% select(Age, Assets, Cash, EBITDA, Equity, Liabilities,
- LTDebt, MarketCap, NetIncome, Return, Revenue, CashRatio, DARatio,
- DivPayer, ROA) %>% summarize_all(quantile) %>% round(2) %>%
- as.matrix() %>% t()
-summary = cbind(matrix1, matrix2)
-colnames(summary) = c('N', 'Mean', 'Sd', 'Min', 'Pctl.25', 'Median', 'Pctl.75', 'Max')
-summary
- 
-#4
-merged4 = merged2 %>% select(Age, MarketCap, Return, CashRatio, DARatio, ROA)
-library(Hmisc)
-corr = rcorr(as.matrix(merged4))
-r = corr$r %>% round(2) %>% c()
-P = corr$P %>% round(4) %>% c()
-sig = P %>% symnum(cutpoints = c(0, 0.01, 0.05, 0.1, 1), symbols = c("***", "**", "*", " "), na = 'NA')
-value = sapply(1:36, function(i){
-    paste(r[i], '(', P[i], ')', sig[i])
-}) %>% matrix(6,6) %>% as.data.frame()
-colnames(value) = c('Age', 'MarketCap', 'Return', 'CashRatio', 'DARatio', 'ROA')
-rownames(value) = c('Age', 'MarketCap', 'Return', 'CashRatio', 'DARatio', 'ROA')
-value
- 
-#5
-# merged2 %>% group_by(DivPayer) %>% summarize(m = mean(CashRatio))
-# Use summarise in School R: merged2 %>% group_by(DivPayer) %>% summarise(m = mean(CashRatio))
-divPayer0 = merged2 %>% filter(DivPayer == 0)
-divPayer1 = merged2 %>% filter(DivPayer == 1)
-mean(divPayer0$CashRatio) - mean(divPayer1$CashRatio)
-t.test(divPayer0$CashRatio, divPayer1$CashRatio, var.equal = FALSE)
- 
-#6
-equallyWeightedAverageCashRatio = merged2 %>% group_by(Year) %>% summarise(averageCashRatio = mean(CashRatio)) %>%
- mutate(Type = 'Equally weighted average')
-valueWeightedAverageCashRatio = merged2 %>% group_by(Year) %>% summarise(averageCashRatio = sum(MarketCap * CashRatio) / sum(MarketCap)) %>%
- mutate(Type = 'Value weighted average')
-averageCashRatio = full_join(equallyWeightedAverageCashRatio, valueWeightedAverageCashRatio)
-library(ggplt2)
-averageCashRatio %>% ggplot(aes(Year, averageCashRatio, linetype = Type)) + geom_line() +
- scale_x_continuous(n.breaks = 14, limits = c(1950, 2019)) + scale_y_continuous(limits = c(0, 0.3)) +
- labs(y = 'Average cash ratio') + ggtitle('Average cash ratio by year') + theme_classic()
- 
-#7
-merged7 = merged2 %>% arrange(FirmID, Year) %>% group_by(FirmID) %>%
- mutate(LagReturn = ifelse((Year - 1) %in% Year, lag(Return, 1), NA)) %>%
- ungroup()
-# check
-merged7 %>% filter(FirmID == 5540 & Year == 2002) %>% select(FirmID, Year, LagReturn)
-sum(is.na(merged7$LagReturn))
- 
-#8
-merged7 %>% lm(CashRatio ~ LnAssets, data = .) %>% summary()
-merged7 %>% lm(CashRatio ~ LnAssets + LnAge + DARatio + DivPayer + LagReturn, data = .) %>% summary()
-merged7 %>% lm(CashRatio ~ LnAssets + LnAge + DARatio + DivPayer + LagReturn + factor(SICIndustry), data = .) %>% summary()
-merged7 %>% lm(CashRatio ~ LnAssets + LnAge + DARatio + DivPayer + LagReturn + factor(Year), data = .) %>% summary()
-merged7 %>% lm(CashRatio ~ LnAssets + LnAge + DARatio + DivPayer +
- LagReturn + factor(SICIndustry) + factor(Year), data = .) %>% summary()
-
 # machine learning 4.3
 # 4.3.2. Naive Bayes
 # Generating train and test set
@@ -7291,3 +7204,324 @@ y <- sweep(y, 2, colMeans(y, na.rm=TRUE))
 y <- sweep(y, 1, rowMeans(y, na.rm=TRUE))
 
 # 
+
+#school homework
+install.packages(c('dplyr', 'vtable', 'Hmisc', 'ggplot2'))
+#1 In school R, getwd(), "H:/Documents", transfer fundamentals.csv and market.csv to there.
+fundamentals = read.csv('fundamentals.csv', header = TRUE, sep = ',')
+market = read.csv('market.csv', header = TRUE, sep = ',')
+library(dplyr)
+merged = inner_join(fundamentals, market, by =c('FirmID', 'Year'))
+# check 156,823 observations and 19 variables.
+str(merged)
+ 
+#2
+merged2 = merged %>% mutate(CashRatio = Cash / Assets, DARatio = LTDebt / Assets,
+ ROA = EBITDA / Assets, DivPayer = ifelse(Dividends > 0, 1, 0),
+ LnAssets = log(Assets * 10^6), LnAge = log(Age))
+# check the value of the above variables for the firm with FirmID 4115 in Year 2005.
+merged2 %>% filter(FirmID == 4115 & Year == 2005) %>% select(CashRatio, DARatio,
+ DivPayer, LnAssets, LnAge, ROA)
+ 
+#3 We need school R
+library(vtable)
+merged3 = merged2 %>% select(Age, Assets, Cash, EBITDA, Equity, Liabilities,
+ LTDebt, MarketCap, NetIncome, Return, Revenue, CashRatio, DARatio,
+ DivPayer, ROA)
+st(merged3, add.median = TRUE)
+ 
+# Another method without using library(vtable)
+matrix1 = merged2 %>% select(Age, Assets, Cash, EBITDA, Equity, Liabilities,
+ LTDebt, MarketCap, NetIncome, Return, Revenue, CashRatio, DARatio,
+ DivPayer, ROA) %>% summarize_all(list(~ n(), ~ mean(.), ~ sd(.))) %>%
+ round(2) %>% matrix(15, 3)
+matrix2 = merged2 %>% select(Age, Assets, Cash, EBITDA, Equity, Liabilities,
+ LTDebt, MarketCap, NetIncome, Return, Revenue, CashRatio, DARatio,
+ DivPayer, ROA) %>% summarize_all(quantile) %>% round(2) %>%
+ as.matrix() %>% t()
+summary = cbind(matrix1, matrix2)
+colnames(summary) = c('N', 'Mean', 'Sd', 'Min', 'Pctl.25', 'Median', 'Pctl.75', 'Max')
+summary
+ 
+#4
+merged4 = merged2 %>% select(Age, MarketCap, Return, CashRatio, DARatio, ROA)
+library(Hmisc)
+corr = rcorr(as.matrix(merged4))
+r = corr$r %>% round(2) %>% c()
+P = corr$P %>% round(4) %>% c()
+sig = P %>% symnum(cutpoints = c(0, 0.01, 0.05, 0.1, 1), symbols = c("***", "**", "*", " "), na = 'NA')
+value = sapply(1:36, function(i){
+    paste(r[i], '(', P[i], ')', sig[i])
+}) %>% matrix(6,6) %>% as.data.frame()
+colnames(value) = c('Age', 'MarketCap', 'Return', 'CashRatio', 'DARatio', 'ROA')
+rownames(value) = c('Age', 'MarketCap', 'Return', 'CashRatio', 'DARatio', 'ROA')
+value
+ 
+#5
+# merged2 %>% group_by(DivPayer) %>% summarize(m = mean(CashRatio))
+# Use summarise in School R: merged2 %>% group_by(DivPayer) %>% summarise(m = mean(CashRatio))
+divPayer0 = merged2 %>% filter(DivPayer == 0)
+divPayer1 = merged2 %>% filter(DivPayer == 1)
+mean(divPayer0$CashRatio) - mean(divPayer1$CashRatio)
+t.test(divPayer0$CashRatio, divPayer1$CashRatio, var.equal = FALSE)
+ 
+#6
+equallyWeightedAverageCashRatio = merged2 %>% group_by(Year) %>% summarise(averageCashRatio = mean(CashRatio)) %>%
+ mutate(Type = 'Equally weighted average')
+valueWeightedAverageCashRatio = merged2 %>% group_by(Year) %>% summarise(averageCashRatio = sum(MarketCap * CashRatio) / sum(MarketCap)) %>%
+ mutate(Type = 'Value weighted average')
+averageCashRatio = full_join(equallyWeightedAverageCashRatio, valueWeightedAverageCashRatio)
+library(ggplt2)
+averageCashRatio %>% ggplot(aes(Year, averageCashRatio, linetype = Type)) + geom_line() +
+ scale_x_continuous(n.breaks = 14, limits = c(1950, 2019)) + scale_y_continuous(limits = c(0, 0.3)) +
+ labs(y = 'Average cash ratio') + ggtitle('Average cash ratio by year') + theme_classic()
+ 
+#7
+merged7 = merged2 %>% arrange(FirmID, Year) %>% group_by(FirmID) %>%
+ mutate(LagReturn = ifelse((Year - 1) %in% Year, lag(Return, 1), NA)) %>%
+ ungroup()
+# check
+merged7 %>% filter(FirmID == 5540 & Year == 2002) %>% select(FirmID, Year, LagReturn)
+sum(is.na(merged7$LagReturn))
+ 
+#8
+merged7 %>% lm(CashRatio ~ LnAssets, data = .) %>% summary()
+merged7 %>% lm(CashRatio ~ LnAssets + LnAge + DARatio + DivPayer + LagReturn, data = .) %>% summary()
+merged7 %>% lm(CashRatio ~ LnAssets + LnAge + DARatio + DivPayer + LagReturn + factor(SICIndustry), data = .) %>% summary()
+merged7 %>% lm(CashRatio ~ LnAssets + LnAge + DARatio + DivPayer + LagReturn + factor(Year), data = .) %>% summary()
+merged7 %>% lm(CashRatio ~ LnAssets + LnAge + DARatio + DivPayer +
+ LagReturn + factor(SICIndustry) + factor(Year), data = .) %>% summary()
+
+
+
+
+
+#9 previous q1-2
+#install.packages(c('dplyr', 'vtable', 'Hmisc', 'ggplot2'))
+install.packages(c('dplyr', 'ggplot2'))
+#1 In school R, getwd(), "H:/Documents", transfer fundamentals.csv and market.csv to there.
+fundamentals = read.csv('fundamentals.csv', header = TRUE, sep = ',')
+market = read.csv('market.csv', header = TRUE, sep = ',')
+library(dplyr)
+merged = inner_join(fundamentals, market, by =c('FirmID', 'Year'))
+# check 156,823 observations and 19 variables.
+#str(merged)
+ 
+#2
+merged2 = merged %>% mutate(CashRatio = Cash / Assets, DARatio = LTDebt / Assets,
+ ROA = EBITDA / Assets, DivPayer = ifelse(Dividends > 0, 1, 0),
+ LnAssets = log(Assets * 10^6), LnAge = log(Age))
+
+#We will create the following variables:
+#Independent variables
+#CashRatio = Cash / Assets
+#Size = 1 if the MarketCap > the median MarketCap within a year; 0 otherwise
+#Dependent variable
+#ROE = Return / Equity
+
+#
+merged9 = merged %>% 
+  filter(Cash > 0 & MarketCap > 0 & Equity > 0) %>%
+  mutate(LnCashRatio =log(Cash / Assets),
+  LnME = log(MarketCap * 10^6),
+  LnA = log(Assets * 10^6),
+  LnBEtoME = log(Equity / MarketCap),
+  LnAtoME = log(Assets / MarketCap),
+  LnAtoBE = log(Assets / Equity)) %>%  
+  arrange(FirmID, Year) %>% group_by(FirmID) %>%
+  mutate(LeadReturn = ifelse((Year + 1) %in% Year, lead(Return, 1), NA)) %>%
+  filter(!is.na(LeadReturn)) %>% 
+  ungroup()
+#str(merged9)
+#156,823 × 23
+
+
+
+
+
+
+mergedTemp = merged9 %>% select(LeadReturn, LnCashRatio, LnME, LnA, LnBEtoME, LnAtoME, LnAtoBE)
+library(Hmisc)
+corr = rcorr(as.matrix(mergedTemp))
+r = corr$r %>% round(2) %>% c()
+P = corr$P %>% round(4) %>% c()
+sig = P %>% symnum(cutpoints = c(0, 0.01, 0.05, 0.1, 1), symbols = c("***", "**", "*", " "), na = 'NA')
+value = sapply(1:49, function(i){
+    paste(r[i], '(', P[i], ')', sig[i])
+}) %>% matrix(7,7) %>% as.data.frame()
+colnames(value) = c('LeadReturn', 'LnCashRatio', 'LnME', 'LnA', 'LnBEtoME', 'LnAtoME', 'LnAtoBE')
+rownames(value) = c('LeadReturn', 'LnCashRatio', 'LnME', 'LnA', 'LnBEtoME', 'LnAtoME', 'LnAtoBE')
+value
+
+
+merged9 %>% lm(LeadReturn ~ LnCashRatio, data = .) %>% summary()
+merged9 %>% lm(LeadReturn ~ LnCashRatio + LnME + LnBEtoME + LnAtoME, data = .) %>% summary()
+merged9 %>% lm(LeadReturn ~ CashRatio + LnME + LnBEtoME + LnAtoME + 
+  factor(SICIndustry) + factor(Year), data = .) %>% summary()
+
+# The size proxy is LnAssets.
+merged9 %>% lm(LeadReturn ~ CashRatio + LnA + LnBEtoME + LnAtoME, data = .) %>% summary()
+merged9 %>% lm(LeadReturn ~ CashRatio + LnA + LnBEtoME + LnAtoME + 
+  factor(SICIndustry) + factor(Year), data = .) %>% summary()
+
+# The leverage proxy is LnAtoBE.
+merged9 %>% lm(LeadReturn ~ CashRatio + LnME + LnBEtoME + LnAtoBE, data = .) %>% summary()
+merged9 %>% lm(LeadReturn ~ CashRatio + LnME + LnBEtoME + LnAtoBE + 
+  factor(SICIndustry) + factor(Year), data = .) %>% summary()
+
+
+
+
+# 1 unit increase of CashRatio will result -0.482684 decrease of LeadROA.
+# 10% increase of CashRatio will result -0.05 decrease of LeadROA.
+
+
+# now we will include control variables: 
+# LeadROA ~ CashRatio + Assets + B/M + Age + Dividends + SIC + Year 
+merged9 %>% mutate(BM = Equity/MarketCap, Assets = Assets * 10^6) %>% filter(is.finite(BM)) %>% 
+lm(LeadROA ~ CashRatio + Assets + BM + 
+Age + Dividends, data = .) %>% summary()
+
+merged9 %>% mutate(BM = Equity/MarketCap) %>% filter(is.finite(BM)) %>% 
+lm(LeadROA ~ CashRatio + MarketCap + BM + 
+Age + Dividends, data = .) %>% summary()
+
+merged9 %>% mutate(BM = Equity/MarketCap) %>% filter(is.finite(BM)) %>% 
+lm(LeadROA ~ CashRatio + Equity + BM + 
+Age + Dividends, data = .) %>% summary()
+
+merged9 %>% mutate(BM = Equity/MarketCap, LnAssets = log(Assets * 10^6)) %>% 
+filter(is.finite(BM)) %>% 
+lm(LeadROA ~ CashRatio + LnAssets + BM + 
+Age + Dividends, data = .) %>% summary()
+
+merged9 %>% mutate(BM = Equity/MarketCap, LnMarketCap = log(MarketCap * 10^6)) %>% 
+filter(is.finite(BM)) %>% filter(!is.nan(LnMarketCap)) %>% 
+lm(LeadROA ~ CashRatio + LnMarketCap + BM + 
+Age + Dividends, data = .) %>% summary()
+
+merged9 %>% mutate(BM = Equity/MarketCap, LnEquity = log(Equity * 10^6)) %>% 
+filter(is.finite(BM)) %>% 
+lm(LeadROA ~ CashRatio + LnEquity + BM + 
+Age + Dividends, data = .) %>% summary()
+
+# in additional analysis, we will see LnAssets, MarketCap
+# in additional analysis, we want to replace CurAssest to replace the Cash.
+
+
+
+
+
+merged9a = merged9 %>% mutate(ROE = EBITDA / Equity) %>% filter(is.finite(ROE)) %>% 
+ arrange(FirmID, Year) %>% group_by(FirmID) %>%
+ mutate(LeadROE = ifelse((Year + 1) %in% Year, lead(ROE, 1), NA)) %>%
+ ungroup()
+
+merged9a %>% lm(EBITDA ~ Cash + Assets, data = .) %>% summary()
+
+
+merged9a %>% lm(LeadROE ~ CashRatio, data = .) %>% summary()
+#not sig
+merged9a %>% lm(LeadROE ~ CashRatio + LnAssets, data = .) %>% summary()
+#not sig
+merged9a %>% lm(LeadROE ~ CashRatio + LnAssets + CashRatio * LnAssets, data = .) %>% 
+  summary()
+#not sig
+merged9a2 = merged9 %>% filter(MarketCap != 0) %>% 
+ mutate(LnMarketCap = log(MarketCap * 10^6)) 
+merged9a2 %>% lm(LeadROA ~ CashRatio, data = .) %>% summary()
+
+merged9a2 %>% lm(LeadROA ~ CashRatio + LnMarketCap, data = .) %>% summary()
+
+merged9a2 %>% lm(LeadROA ~ CashRatio + LnMarketCap + CashRatio * LnMarketCap, data = .) %>% 
+  summary()
+# results hold if we use lnMarketCap as a proxy for the size of a firm.
+# however, due to several observations havee negative market cap, these will be removed
+#> sum(is.nan(merged9a2$LnMarketCap))
+#[1] 21766
+#> sum(merged9$MarketCap<0)
+#[1] 21766
+
+merged9a3 = merged9a %>% filter(MarketCap != 0) %>% 
+   mutate(LnMarketCap = log(MarketCap * 10^6)) 
+
+merged9a3 %>% lm(LeadROE ~ CashRatio, data = .) %>% summary()
+
+merged9a3 %>% lm(LeadROE ~ CashRatio + LnMarketCap, data = .) %>% summary()
+
+merged9a3 %>% lm(LeadROE ~ CashRatio + LnMarketCap + CashRatio * LnMarketCap, data = .) %>% 
+  summary()
+
+
+
+sum(is.nan(merged9a$ROE))
+sum(is.infinite(merged9a$ROE))
+
+  %>% 
+ filter(ROE != 0) %>%
+ arrange(FirmID, Year) %>% group_by(FirmID) %>%
+ mutate(LeadROE = ifelse((Year + 1) %in% Year, lead(ROE,1), NA)) %>%
+ ungroup()
+#str(merged9a)
+#156,784 × 25
+merged9a %>% filter(!is.na(LeadROE)) %>%
+ lm(LeadROE ~ CashRatio, data = .) %>% summary()
+
+sum(merged9a$LeadROE == NA)
+
+
+sum(is.na(merged9$LeadROA))
+#15964
+sum(is.na(merged9$LeadROE))
+#15964
+sum(is.na(merged9$ROA))
+sum(is.na(merged9$ROE))
+
+merged9 %>% filter(!is.na(LeadROE)) %>% lm(LeadROE ~ CashRatio, data = .) %>% summary()
+merged9 %>% lm(LeadROA ~ CashRatio, data = .) %>% summary()
+
+ha = merged9 %>% filter(!is.na(LeadROE))
+#str(ha)
+#140,859 × 25
+ha %>% lm(LeadROE ~ CashRatio, data = .) %>% summary()
+
+ha = merged9 %>% filter(!is.na(LeadROA))
+#str(ha)
+#140,859 × 25
+ha %>% lm(LeadROA ~ CashRatio, data = .) %>% summary()
+
+
+
+
+ha = merged9 %>% mutate(ROE = EBITDA / Equity)
+ha %>% 
+
+
+merged9 %>% lm(LeadROA ~ CashRatio + LnAssets, data = .) %>% summary()
+# 1 unit increase of CashRatio will result -0.4432679 decrease of LeadROA.
+# 10% increase of CashRatio will result -0.04 decrease of LeadROA.
+# 1 unit increase of LnAssets will result 0.0217513 increase of LeadROA.
+merged9 %>% lm(LeadROA ~ CashRatio + LnAssets + CashRatio * LnAssets, data = .) %>% 
+  summary()
+#CashRatio -2.9462631
+#LnAssets 0.0035240
+#CashRatio:LnAssets 0.1380567
+#Although CashRatio decrease LeadROA by -0.29 per 10%, if LnAssets is 1 unit higher, 
+# then the effeeeect of CashRatio on LeadROA will change to -2.8082064.
+merged9 %>% lm(LeadROA ~ LnAssets + CashRatio + factor(Year), data = .) %>% summary()
+
+
+# our result shows that the negative effect of cash holding is worse for the smaller
+# firms, smaller firms should try to avoid holding idle cash and seek better
+# investment opportunities.
+
+
+
+# additional analysis to change another variable
+merged9a = merged9 %>% filter(!is.na(Equity)) 
+
+
+
+#test
+a = data.frame(c = c(1,2,3,5,6), ln = c(75,65,4,53,66), le = c(NA, 1,2,3,16))
+a %>% lm(c ~ ln + le, data = .) %>% summary()
