@@ -16,13 +16,9 @@ time_to_reponse = data %>% drop_na(t_PR) %>% select(t_PR) %>% rename(time_to_rep
 # test
 data = tibble(patient = c(1, 2, 3, 4, 5, 7, 8, 14, 16, 17, 18, 19, 21), 
 PR = c(19, 14, 3, 1.5, 1.4, 1.5, 1.6, 1.5, 1.4, 1.5, 1.4, 1.6, 1.3),
-PD = c(NA, NA, NA, 12.5, NA, 11.5, 7.5, 9, NA, 7, 6.9, NA, 5.5)) %>% 
+PD = c(NA, NA, NA, 12.5, NA, 11.5, 7.5, 9, 16.5, 7, 6.9, NA, 5.5)) %>% 
 mutate(DOR = PD - PR)
 data %>% write_csv("ha.csv")
-
-median(data$PR)
-min(data$PR)
-max(data$PR)
 
 median(data$DOR, na.rm = TRUE) 
 
